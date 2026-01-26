@@ -3,6 +3,7 @@ package com.becajava.ms_transaction_worker.infra.persistence;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -16,6 +17,8 @@ public class TransacaoEntity {
     private String status;
     @Column(name = "tipo")
     private String tipo;
+    @Column(name = "data_criacao")
+    private LocalDateTime dataCriacao;
 
     public TransacaoEntity() {
     }

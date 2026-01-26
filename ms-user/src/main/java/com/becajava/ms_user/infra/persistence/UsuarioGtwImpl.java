@@ -14,23 +14,26 @@ public class UsuarioGtwImpl implements UsuarioGateway {
         this.repository = repository;
     }
 
-
     @Override
     public Usuario criarUsuario(Usuario usuario) {
+        // Conversão limpa (5 campos)
         UsuarioEntity entity = new UsuarioEntity(
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getCpf(),
                 usuario.getEmail(),
-                usuario.getSenha(),
-                usuario.getSaldo()
+                usuario.getSenha()
         );
 
         UsuarioEntity salvo = repository.save(entity);
 
-        return new Usuario(salvo.getId(),salvo.getNome(), salvo.getCpf(), salvo.getEmail(), salvo.getSenha(),salvo.getSaldo());
-
-
+        return new Usuario(
+                salvo.getId(),
+                salvo.getNome(),
+                salvo.getCpf(),
+                salvo.getEmail(),
+                salvo.getSenha()
+        );
     }
 
     @Override
@@ -45,35 +48,49 @@ public class UsuarioGtwImpl implements UsuarioGateway {
 
     @Override
     public Optional<Usuario> buscaPorEmail(String email) {
-        return repository.findByEmail(email).map(entity-> new Usuario(entity.getId(), entity.getNome(), entity.getCpf(), entity.getEmail(), entity.getSenha(), entity.getSaldo()));
-    }
-
-    @Override
-    public Optional<Usuario> buscaPorId(Long id) {
-        return repository.findById(id).map(entity-> new Usuario(
+        // CORRIGIDO: Removido entity.getSaldo()
+        return repository.findByEmail(email).map(entity -> new Usuario(
                 entity.getId(),
                 entity.getNome(),
                 entity.getCpf(),
                 entity.getEmail(),
-                entity.getSenha(),
-                entity.getSaldo()
+                entity.getSenha()
+        ));
+    }
+
+    @Override
+    public Optional<Usuario> buscaPorId(Long id) {
+        // CORRIGIDO: Removido entity.getSaldo()
+        return repository.findById(id).map(entity -> new Usuario(
+                entity.getId(),
+                entity.getNome(),
+                entity.getCpf(),
+                entity.getEmail(),
+                entity.getSenha()
         ));
     }
 
     @Override
     public Usuario atualizar(Usuario usuario) {
+        // CORRIGIDO: Removido usuario.getSaldo()
         UsuarioEntity entity = new UsuarioEntity(
                 usuario.getId(),
                 usuario.getNome(),
                 usuario.getCpf(),
                 usuario.getEmail(),
-                usuario.getSenha(),
-                usuario.getSaldo()
+                usuario.getSenha()
         );
 
         UsuarioEntity salvo = repository.save(entity);
 
-        return new Usuario(salvo.getId(),salvo.getNome(), salvo.getCpf(), salvo.getEmail(), salvo.getSenha(),salvo.getSaldo());
+        // CORRIGIDO: Removido salvo.getSaldo()
+        return new Usuario(
+                salvo.getId(),
+                salvo.getNome(),
+                salvo.getCpf(),
+                salvo.getEmail(),
+                salvo.getSenha()
+        );
     }
 
     @Override

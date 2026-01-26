@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // <--- IMPORTANTE
 import java.math.BigDecimal;
 import java.util.UUID;
 
-// 👇 ESSA LINHA É O SEGREDO!
-// Ela diz: "Se vier campos extras (como dataCriacao), ignore e não dê erro".
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TransacaoKafkaDTO(
         UUID id,

@@ -30,7 +30,4 @@ public class UsuarioEntity {
 
     @Column(nullable = false)
     private String senha;
-
-    @Column(name = "saldo")
-    private BigDecimal saldo;
 }

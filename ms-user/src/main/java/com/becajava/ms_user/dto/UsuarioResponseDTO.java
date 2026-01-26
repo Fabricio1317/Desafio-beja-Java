@@ -7,10 +7,10 @@ import java.math.BigDecimal;
 public record UsuarioResponseDTO(
         Long id,
         String nome,
-        String email,
-        BigDecimal saldo
+        String cpf,
+        String email
 ) {
     public UsuarioResponseDTO(Usuario usuario){
-        this(usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getSaldo());
+        this(usuario.getId(), usuario.getCpf(), usuario.getNome(), usuario.getEmail());
     }
 }

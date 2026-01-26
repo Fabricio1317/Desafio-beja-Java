@@ -22,11 +22,6 @@ public class UserConfig {
     }
 
     @Bean
-    public AtualizarSaldoUseCase atualizarUseCase(UsuarioGateway gateway){
-        return new AtualizarSaldoUseCase(gateway);
-    }
-
-    @Bean
     public DeletarUseCase deletarUseCase(UsuarioGateway gateway){
         return new DeletarUseCase(gateway);
     }

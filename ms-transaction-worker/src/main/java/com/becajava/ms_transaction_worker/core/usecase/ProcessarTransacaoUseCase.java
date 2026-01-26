@@ -4,223 +4,179 @@ import com.becajava.ms_transaction_worker.core.domain.Transacao;
 import com.becajava.ms_transaction_worker.core.gateway.TransacaoGateway;
 import com.becajava.ms_transaction_worker.core.gateway.ValidadorGateway;
 import com.becajava.ms_transaction_worker.infra.dto.ContaExternaDTO;
-import com.becajava.ms_transaction_worker.infra.dto.TransacaoMockDTO;
+import com.becajava.ms_transaction_worker.infra.dto.UsuarioDTO;
 import com.becajava.ms_transaction_worker.infra.integration.MockApiFinanceiroClient;
 import com.becajava.ms_transaction_worker.infra.integration.UsuarioClient;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.List;
 
+@Service
 public class ProcessarTransacaoUseCase {
 
     private final TransacaoGateway transacaoGateway;
     private final ValidadorGateway validadorGateway;
-    private final UsuarioClient usuarioClient;
-    private final MockApiFinanceiroClient mockApiFinanceiroClient;
+    private final UsuarioClient usuarioClient;            // Acesso ao Postgres (Pessoas)
+    private final MockApiFinanceiroClient financeiroClient; // Acesso à MockAPI (Carteiras/Dinheiro)
 
     public ProcessarTransacaoUseCase(
             TransacaoGateway transacaoGateway,
             ValidadorGateway validadorGateway,
             UsuarioClient usuarioClient,
-            MockApiFinanceiroClient mockApiFinanceiroClient
+            MockApiFinanceiroClient financeiroClient
     ) {
         this.transacaoGateway = transacaoGateway;
         this.validadorGateway = validadorGateway;
         this.usuarioClient = usuarioClient;
-        this.mockApiFinanceiroClient = mockApiFinanceiroClient;
+        this.financeiroClient = financeiroClient;
     }
 
     public void execute(Transacao transacao) {
         System.out.println("------------------------------------------------");
-        System.out.println("DEBUG - Tipo recebido: [" + transacao.getTipo() + "]");
-        System.out.println(" Iniciando validações para transação: " + transacao.getId());
+        System.out.println("🚀 Processando Transação: " + transacao.getId());
+        System.out.println("DEBUG - Tipo: [" + transacao.getTipo() + "] | Valor: " + transacao.getValor());
 
-        if (transacao.getTipo() == null || transacao.getTipo().isBlank()) {
-            System.out.println("  Tipo da transação é obrigatório");
-            rejeitarESalvar(transacao);
-            return;
-        }
+        try {
+            // 1. VALIDAÇÕES BÁSICAS
+            if (transacao.getValor() == null || transacao.getValor().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RuntimeException("Valor inválido.");
+            }
 
-        if (transacao.getValor() == null || transacao.getValor().doubleValue() <= 0) {
-            System.out.println(" Valor da transação inválido");
-            rejeitarESalvar(transacao);
-            return;
-        }
+            // 2. VALIDAÇÃO DE IDENTIDADE (POSTGRES)
+            System.out.println("🔍 (1/4) Validando usuários no Postgres...");
 
-        String tipo = transacao.getTipo().toUpperCase();
+            UsuarioDTO pagador = null;
+            UsuarioDTO recebedor = null;
 
-        if (!tipo.equals("TRANSFERENCIA")
-                && !tipo.equals("DEPOSITO")
-                && !tipo.equals("SAQUE")) {
+            // --- BUSCA PAGADOR ---
+            if (transacao.getPagadorId() != null) {
+                pagador = usuarioClient.buscarPorId(transacao.getPagadorId());
 
-            System.out.println("  Tipo da transação inválido: " + tipo);
-            rejeitarESalvar(transacao);
-            return;
-        }
-
-        if (tipo.equals("SAQUE") || tipo.equals("TRANSFERENCIA")) {
-            System.out.println(" Consultando saldo no Banco Central (MockAPI)...");
-            try {
-                // Busca a conta externa usando o ID do pagador
-                ContaExternaDTO contaExterna = mockApiFinanceiroClient.buscarConta(transacao.getPagadorId());
-
-                System.out.println(" Saldo externo encontrado: " + contaExterna.saldo());
-
-                // Verifica se o saldo externo é menor que o valor da transação
-                if (contaExterna.saldo().compareTo(transacao.getValor()) < 0) {
-                    System.out.println("  REJEITADA: Saldo insuficiente no Banco Central (MockAPI)!");
-                    rejeitarESalvar(transacao);
-                    return; // Interrompe o processo aqui
+                // Verifica se o CPF não é nulo ANTES de chamar o .length()
+                if (pagador.cpf() != null && pagador.cpf().length() == 14 && transacao.getTipo().equalsIgnoreCase("TRANSFERENCIA")) {
+                    throw new RuntimeException("Lojistas não podem realizar transferências.");
                 }
 
-            } catch (Exception e) {
-                System.out.println("  Erro crítico: Não foi possível validar saldo no MockAPI: " + e.getMessage());
-                // Por segurança, se o banco central tá fora, rejeitamos a transação
-                rejeitarESalvar(transacao);
-                return;
-            }
-        }
-
-
-        var pagador = transacao.getPagadorId() != null
-                ? usuarioClient.buscarPorId(transacao.getPagadorId())
-                : null;
-
-        var recebedor = transacao.getRecebedorId() != null
-                ? usuarioClient.buscarPorId(transacao.getRecebedorId())
-                : null;
-
-        boolean pagadorOk =
-                tipo.equals("DEPOSITO") || pagador != null;
-
-        boolean recebedorOk =
-                tipo.equals("SAQUE") || recebedor != null;
-
-        if (!pagadorOk || !recebedorOk) {
-            System.out.println("  Usuário inválido para o tipo da transação");
-            rejeitarESalvar(transacao);
-            return;
-        }
-
-        // ===============================
-        // 3️⃣ VALIDA LIMITE EM DÓLAR
-        // ===============================
-        double dolarHoje;
-        try {
-            dolarHoje = validadorGateway.obterCotacaoDolar();
-            if (dolarHoje <= 0) dolarHoje = 5.0;
-        } catch (Exception e) {
-            // Log limpo, sem estourar erro gigante
-            System.out.println("  Dólar indisponível, usando cotação padrão: 5.0");
-            dolarHoje = 5.0;
-        }
-
-        double limite = 1000 * dolarHoje;
-
-        if (transacao.getValor().doubleValue() > limite) {
-            System.out.println("  Valor excede limite permitido");
-            rejeitarESalvar(transacao);
-            return;
-        }
-
-        // ===============================
-        // 4️⃣ APROVA E EXECUTA (BANCO LOCAL)
-        // ===============================
-        transacao.aprovar();
-
-        switch (tipo) {
-            case "TRANSFERENCIA" -> {
-                usuarioClient.atualizarSaldo(
-                        pagador.id(),
-                        pagador.saldo().subtract(transacao.getValor())
-                );
-                usuarioClient.atualizarSaldo(
-                        recebedor.id(),
-                        recebedor.saldo().add(transacao.getValor())
-                );
-            }
-            case "DEPOSITO" -> {
-                usuarioClient.atualizarSaldo(
-                        recebedor.id(),
-                        recebedor.saldo().add(transacao.getValor())
-                );
-            }
-            case "SAQUE" -> {
-                usuarioClient.atualizarSaldo(
-                        pagador.id(),
-                        pagador.saldo().subtract(transacao.getValor())
-                );
-            }
-        }
-
-        // =============================================================
-        // 🆕 ATUALIZAÇÃO DO SALDO NO BANCO CENTRAL (MOCK API) - CORRIGIDO
-        // =============================================================
-        try {
-            // 🟥 1. LADO DO PAGADOR (Quem perde dinheiro: SAQUE ou TRANSFERENCIA)
-            if (tipo.equals("SAQUE") || tipo.equals("TRANSFERENCIA")) {
-                Long idPagador = transacao.getPagadorId();
-
-                // Busca conta e Subtrai
-                ContaExternaDTO contaPagador = mockApiFinanceiroClient.buscarConta(idPagador);
-                BigDecimal novoSaldoPagador = contaPagador.saldo().subtract(transacao.getValor());
-
-                // Atualiza no Mock
-                mockApiFinanceiroClient.atualizarSaldoExterno(
-                        idPagador,
-                        new ContaExternaDTO(idPagador, novoSaldoPagador)
-                );
-                System.out.println(" Débito realizado no MockAPI (ID " + idPagador + "): " + novoSaldoPagador);
+                if (pagador.cpf() == null) {
+                    System.out.println("⚠️ ALERTA: Pagador ID " + pagador.id() + " está sem CPF no cadastro!");
+                }
             }
 
-            // 🟩 2. LADO DO RECEBEDOR (Quem ganha dinheiro: DEPOSITO ou TRANSFERENCIA)
-            if (tipo.equals("DEPOSITO") || tipo.equals("TRANSFERENCIA")) {
-                Long idRecebedor = transacao.getRecebedorId();
-
-                // Busca conta e Soma
-                ContaExternaDTO contaRecebedor = mockApiFinanceiroClient.buscarConta(idRecebedor);
-                BigDecimal novoSaldoRecebedor = contaRecebedor.saldo().add(transacao.getValor());
-
-                // Atualiza no Mock
-                mockApiFinanceiroClient.atualizarSaldoExterno(
-                        idRecebedor,
-                        new ContaExternaDTO(idRecebedor, novoSaldoRecebedor)
-                );
-                System.out.println("  Crédito realizado no MockAPI (ID " + idRecebedor + "): " + novoSaldoRecebedor);
+            // --- BUSCA RECEBEDOR (ADICIONADO) ---
+            // Faltava esse bloco no seu código anterior!
+            if (transacao.getRecebedorId() != null) {
+                try {
+                    recebedor = usuarioClient.buscarPorId(transacao.getRecebedorId());
+                } catch (Exception e) {
+                    // Se não achar o recebedor, loga mas continua null
+                    System.out.println("⚠️ Recebedor não encontrado no Postgres.");
+                }
             }
+
+            // 3. BUSCA DE CARTEIRAS (MOCK API)
+            System.out.println("💰 (2/4) Buscando carteiras na MockAPI...");
+
+            ContaExternaDTO carteiraPagador = null;
+            ContaExternaDTO carteiraRecebedor = null;
+
+            if (pagador != null) {
+                try {
+                    carteiraPagador = buscarCarteiraNaMockApi(pagador.id());
+                } catch (Exception e) {
+                    System.out.println("⚠️ Carteira do Pagador não encontrada.");
+                }
+            }
+
+            if (recebedor != null) {
+                try {
+                    carteiraRecebedor = buscarCarteiraNaMockApi(recebedor.id());
+                } catch (Exception e) {
+                    System.out.println("⚠️ Carteira do Recebedor não encontrada.");
+                }
+            }
+
+            // --- BLINDAGEM (ADICIONADO) ---
+            // Verifica se temos tudo o que precisamos ANTES de tentar processar
+            if (transacao.getTipo().equals("TRANSFERENCIA")) {
+                if (carteiraPagador == null) throw new RuntimeException("Pagador não possui carteira ativa.");
+                if (carteiraRecebedor == null) throw new RuntimeException("Recebedor não possui carteira ativa.");
+            }
+            if (transacao.getTipo().equals("DEPOSITO") && carteiraRecebedor == null) {
+                throw new RuntimeException("Recebedor não possui carteira para depósito.");
+            }
+            if (transacao.getTipo().equals("SAQUE") && carteiraPagador == null) {
+                throw new RuntimeException("Pagador não possui carteira para saque.");
+            }
+
+            // 4. VALIDAÇÃO DE SALDO (MOCK API)
+            if (carteiraPagador != null && (transacao.getTipo().equals("TRANSFERENCIA") || transacao.getTipo().equals("SAQUE"))) {
+                if (carteiraPagador.saldo().compareTo(transacao.getValor()) < 0) {
+                    throw new RuntimeException("Saldo insuficiente na MockAPI.");
+                }
+            }
+
+            // 5. VALIDAÇÃO DE LIMITE EXTERNO (DÓLAR)
+            validarLimiteDolar(transacao);
+
+            // 6. EXECUÇÃO DA TRANSAÇÃO (ATUALIZAÇÃO NA MOCK API)
+            System.out.println("🔄 (3/4) Atualizando saldos na MockAPI...");
+
+            String tipo = transacao.getTipo().toUpperCase();
+
+            // Lógica para Debitar do Pagador
+            if (tipo.equals("TRANSFERENCIA") || tipo.equals("SAQUE")) {
+                BigDecimal novoSaldo = carteiraPagador.saldo().subtract(transacao.getValor());
+
+                financeiroClient.atualizarSaldo(carteiraPagador.id(),
+                        new ContaExternaDTO(carteiraPagador.id(), carteiraPagador.userId(), novoSaldo));
+
+                System.out.println("   -> Débito efetuado na conta " + carteiraPagador.id());
+            }
+
+            // Lógica para Creditar no Recebedor
+            if (tipo.equals("TRANSFERENCIA") || tipo.equals("DEPOSITO")) {
+                BigDecimal novoSaldo = carteiraRecebedor.saldo().add(transacao.getValor());
+
+                financeiroClient.atualizarSaldo(carteiraRecebedor.id(),
+                        new ContaExternaDTO(carteiraRecebedor.id(), carteiraRecebedor.userId(), novoSaldo));
+
+                System.out.println("   -> Crédito efetuado na conta " + carteiraRecebedor.id());
+            }
+
+            // 7. FINALIZAÇÃO (POSTGRES)
+            System.out.println("✅ (4/4) Transação concluída! Salvando status APROVADA.");
+            transacaoGateway.atualizarStatus(transacao.getId(), "APROVADA");
 
         } catch (Exception e) {
-            System.out.println("  ALERTA: Erro ao atualizar MockAPI: " + e.getMessage());
-            // Logamos o erro mas não paramos, pois o banco local já foi atualizado
+            System.err.println("❌ ERRO NO PROCESSAMENTO: " + e.getMessage());
+            transacaoGateway.atualizarStatus(transacao.getId(), "REPROVADA");
         }
-
-        // ===============================
-        // 5️⃣ SALVA HISTÓRICO (Mock API)
-        // ===============================
-        TransacaoMockDTO historico = new TransacaoMockDTO(
-                transacao.getPagadorId(),
-                transacao.getRecebedorId(),
-                transacao.getValor().doubleValue(),
-                tipo,
-                LocalDateTime.now().toString()
-        );
-
-        // Envolvemos em try-catch para garantir que falha de log não quebre o processo
-        try {
-            mockApiFinanceiroClient.salvarNoMock(historico);
-        } catch (Exception e) {
-            System.out.println("  Falha ao salvar histórico, mas transação foi concluída.");
-        }
-
-        System.out.println("  Transação " + tipo + " APROVADA com sucesso!");
         System.out.println("------------------------------------------------");
-
-        transacaoGateway.atualizar(transacao);
     }
 
-    private void rejeitarESalvar(Transacao transacao) {
-        transacao.rejeitar();
-        transacaoGateway.atualizar(transacao);
-        System.out.println("------------------------------------------------");
+    // --- MÉTODOS AUXILIARES ---
+
+    private ContaExternaDTO buscarCarteiraNaMockApi(Long userId) {
+        List<ContaExternaDTO> contas = financeiroClient.buscarCarteiraPorUserId(userId);
+
+        if (contas == null || contas.isEmpty()) {
+            throw new RuntimeException("Usuário ID " + userId + " não possui carteira ativa na MockAPI!");
+        }
+        return contas.get(0);
+    }
+
+    private void validarLimiteDolar(Transacao transacao) {
+        try {
+            double cotacao = validadorGateway.obterCotacaoDolar();
+            if (cotacao <= 0) cotacao = 5.0; // Fallback
+
+            BigDecimal limite = BigDecimal.valueOf(1000 * cotacao);
+            if (transacao.getValor().compareTo(limite) > 0) {
+                throw new RuntimeException("Valor excede o limite regulatório (USD 1000).");
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Aviso: Não foi possível validar limite Dólar. Prosseguindo...");
+        }
     }
 }

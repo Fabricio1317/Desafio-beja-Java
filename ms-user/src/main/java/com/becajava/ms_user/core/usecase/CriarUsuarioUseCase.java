@@ -25,7 +25,7 @@ public class CriarUsuarioUseCase {
 
         String senhaHash = passwordEncoderGateway.encode(dto.senha());
 
-        Usuario novoUsuario = new Usuario(dto.nome(), dto.cpf(), dto.email(), senhaHash, dto.saldo());
+        Usuario novoUsuario = new Usuario(dto.nome(), dto.cpf(), dto.email(), senhaHash);
 
         Usuario usuario = usuarioGateway.criarUsuario(novoUsuario);
 

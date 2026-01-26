@@ -4,6 +4,10 @@ import com.becajava.ms_transaction_worker.core.gateway.ValidadorGateway;
 import com.becajava.ms_transaction_worker.infra.dto.BrasilApiDTO;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 
 @Service
 public class ValidadorGtwImpl implements ValidadorGateway {
@@ -30,18 +34,27 @@ public class ValidadorGtwImpl implements ValidadorGateway {
 
     @Override
     public Double obterCotacaoDolar() {
-        try {
-            // Chamando a BrasilAPI para a moeda USD
-            BrasilApiDTO resposta = brasilApiClient.buscarCotacao("USD");
+        // Loop para tentar hoje, ontem, anteontem... (caso seja fim de semana)
+        for (int i = 0; i < 4; i++) {
+            try {
+                // Formata a data: 2026-01-25
+                String data = LocalDate.now().minusDays(i).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-            if (resposta != null && resposta.valor() != null) {
-                System.out.println("🇧🇷 [BrasilAPI] Cotação do Dólar: " + resposta.valor());
-                return resposta.valor();
+                // Busca a lista na API
+                List<BrasilApiDTO> cotacoes = brasilApiClient.buscarCotacao("USD", data);
+
+                // Se tiver dados, retorna o valor e ENCERRA o método
+                if (cotacoes != null && !cotacoes.isEmpty()) {
+                    return cotacoes.get(cotacoes.size() - 1).valor();
+                }
+            } catch (Exception e) {
+                // Se der erro (404/Timeout), ignora e o loop roda de novo para o dia anterior
+                continue;
             }
+        }
+            System.out.println("⚠️ API Indisponível ou Feriado prolongado. Usando fallback 5.0");
             return 5.0;
-        } catch (Exception e) {
-            System.err.println("⚠️ Falha na BrasilAPI: " + e.getMessage());
-            return 5.0; // Fallback de segurança
+
         }
     }
-}
+

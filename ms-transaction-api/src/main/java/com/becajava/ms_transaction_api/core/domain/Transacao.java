@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Transacao {
@@ -14,13 +15,13 @@ public class Transacao {
     private BigDecimal valor;
     private StatusTransacao status;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private LocalDate dataCriacao;
+    private LocalDateTime dataCriacao;
     @Column(name = "tipo")
     private String tipo;
 
     public Transacao(Long pagadorId, Long recebedorId, BigDecimal valor, String tipo) {
         this.id = UUID.randomUUID();
-        this.dataCriacao = LocalDate.now(); // Corrigido para pegar a data atual
+        this.dataCriacao = LocalDateTime.now(); // Corrigido para pegar a data atual
         this.pagadorId = pagadorId;
         this.recebedorId = recebedorId;
         this.valor = valor;
@@ -38,11 +39,10 @@ public class Transacao {
         validar();
     }
 
+    public Transacao() {
+    }
 
-
-
-
-    public Transacao(UUID id, Long pagadorId, Long recebedorId, BigDecimal valor, StatusTransacao status, LocalDate dataCriacao, String tipo) {
+    public Transacao(UUID id, Long pagadorId, Long recebedorId, BigDecimal valor, StatusTransacao status, LocalDateTime dataCriacao, String tipo) {
         this.id = id;
         this.pagadorId = pagadorId;
         this.recebedorId = recebedorId;
@@ -66,7 +66,7 @@ public class Transacao {
         }
     }
 
-    public LocalDate getDataCriacao() {
+    public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
 
@@ -96,5 +96,29 @@ public class Transacao {
 
     public void setTipo(String tipo) {
         this.tipo = tipo;
+    }
+
+    public void setDataCriacao(LocalDateTime dataCriacao) {
+        this.dataCriacao = dataCriacao;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public void setPagadorId(Long pagadorId) {
+        this.pagadorId = pagadorId;
+    }
+
+    public void setRecebedorId(Long recebedorId) {
+        this.recebedorId = recebedorId;
+    }
+
+    public void setStatus(StatusTransacao status) {
+        this.status = status;
+    }
+
+    public void setValor(BigDecimal valor) {
+        this.valor = valor;
     }
 }

@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -23,7 +23,8 @@ public class TransacaoEntity {
     private BigDecimal valor;
     @Enumerated(EnumType.STRING)
     private StatusTransacao status;
-    private LocalDate dataCriacao;
+    @Column(name = "data_criacao")
+    private LocalDateTime dataCriacao;
     @Column(name =  "tipo", columnDefinition = "varchar(255)")
     private String tipo;
 }
