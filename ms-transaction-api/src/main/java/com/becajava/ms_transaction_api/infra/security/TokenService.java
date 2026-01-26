@@ -1,0 +1,27 @@
+package com.becajava.ms_transaction_api.infra.security;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+public class TokenService {
+
+    @Value("${api.security.token.secret}")
+    private String secret;
+
+    public String validateToken(String token){
+        try {
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+            return JWT.require(algorithm)
+                    .withIssuer("ms-user") // Tem que bater com o emissor do ms-user
+                    .build()
+                    .verify(token)
+                    .getSubject(); // Retorna o email do usuário
+        } catch (JWTVerificationException exception){
+            return ""; // Token inválido ou expirado
+        }
+    }
+}

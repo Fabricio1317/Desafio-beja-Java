@@ -1,7 +1,6 @@
 package com.becajava.ms_transaction_api.core.domain;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.Column;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,9 +13,7 @@ public class Transacao {
     private Long recebedorId;
     private BigDecimal valor;
     private StatusTransacao status;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDateTime dataCriacao;
-    @Column(name = "tipo")
     private String tipo;
 
     public Transacao(Long pagadorId, Long recebedorId, BigDecimal valor, String tipo) {
