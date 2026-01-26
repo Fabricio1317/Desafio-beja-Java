@@ -34,7 +34,7 @@ public class TokenService implements TokenGateway {
         }
     }
 
-    // --- O CÓDIGO DO FILTRO PRECISA DESSE MÉTODO AQUI ---
+
     public String validarToken(String token) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
@@ -44,7 +44,7 @@ public class TokenService implements TokenGateway {
                     .verify(token)
                     .getSubject(); // Devolve o e-mail
         } catch (JWTVerificationException exception){
-            return ""; // Se der erro, retorna vazio
+            return "";
         }
     }
 

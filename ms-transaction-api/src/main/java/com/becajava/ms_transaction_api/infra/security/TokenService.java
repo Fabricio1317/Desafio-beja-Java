@@ -16,12 +16,12 @@ public class TokenService {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.require(algorithm)
-                    .withIssuer("ms-user") // Tem que bater com o emissor do ms-user
+                    .withIssuer("ms-user")
                     .build()
                     .verify(token)
-                    .getSubject(); // Retorna o email do usuário
+                    .getSubject();
         } catch (JWTVerificationException exception){
-            return ""; // Token inválido ou expirado
+            return "";
         }
     }
 }

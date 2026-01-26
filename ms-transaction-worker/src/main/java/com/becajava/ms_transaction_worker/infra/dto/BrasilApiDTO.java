@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BrasilApiDTO(
-        @JsonProperty("cotacao_venda") Double valor, // Mapeia "cotacao_venda" para "valor"
+        @JsonProperty("cotacao_venda") Double valor,
         @JsonProperty("data_hora_cotacao") String dataHora
 ) {
 }

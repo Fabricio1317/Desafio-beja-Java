@@ -29,7 +29,7 @@ public class ExcelImportService {
             Sheet sheet = workbook.getSheetAt(0);
 
             for (Row row : sheet) {
-                if (row.getRowNum() == 0) continue; // Pula cabeçalho
+                if (row.getRowNum() == 0) continue;
 
                 try {
                     String nome = getCellValue(row, 0);
@@ -39,7 +39,7 @@ public class ExcelImportService {
 
                     if(nome.isBlank() || cpf.isBlank() || email.isBlank()) continue;
 
-                    // CORREÇÃO AQUI EMBAIXO: Removi o ", null" do final
+
                     UsuarioRequestDTO dto = new UsuarioRequestDTO(nome, cpf, email, senha);
 
                     criarUsuarioUseCase.execute(dto);

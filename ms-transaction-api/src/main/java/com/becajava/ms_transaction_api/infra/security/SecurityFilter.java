@@ -24,24 +24,23 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        System.out.println("--- DEBUG: Iniciando filtro de segurança ---");
+
         var token = this.recoverToken(request);
 
         if(token != null){
-            System.out.println("--- DEBUG: Token encontrado: " + token.substring(0, 10) + "...");
+            System.out.println("Token encontrado: " + token.substring(0, 10) + "...");
             try {
                 var login = tokenService.validateToken(token);
-                System.out.println("--- DEBUG: Token validado com sucesso! Usuário: " + login);
+                System.out.println(" Token validado com sucesso! Usuário: " + login);
 
                 if(!login.isEmpty()){
                     var authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
                     var authentication = new UsernamePasswordAuthenticationToken(login, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    System.out.println("--- DEBUG: Autenticação setada no contexto. Acesso liberado.");
+                    System.out.println("Autenticação setada no contexto. Acesso liberado.");
                 }
             } catch (Exception e) {
-                System.out.println("--- DEBUG: ERRO ao validar token: " + e.getMessage());
-                // Isso aqui vai mostrar se o erro é senha (Signature) ou validade (Expired)
+                System.out.println("ERRO ao validar token: " + e.getMessage());
                 e.printStackTrace();
             }
         } else {

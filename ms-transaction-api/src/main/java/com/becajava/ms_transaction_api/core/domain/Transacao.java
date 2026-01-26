@@ -3,7 +3,6 @@ package com.becajava.ms_transaction_api.core.domain;
 
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,16 +17,15 @@ public class Transacao {
 
     public Transacao(Long pagadorId, Long recebedorId, BigDecimal valor, String tipo) {
         this.id = UUID.randomUUID();
-        this.dataCriacao = LocalDateTime.now(); // Corrigido para pegar a data atual
+        this.dataCriacao = LocalDateTime.now();
         this.pagadorId = pagadorId;
         this.recebedorId = recebedorId;
         this.valor = valor;
         this.tipo = tipo;
 
-        System.out.println("--- DEBUG DO CONSTRUTOR ---");
         System.out.println("Pagador recebido: " + this.pagadorId); System.out.println("Recebedor recebido: " + this.recebedorId);
         System.out.println("São iguais? " + (this.pagadorId != null && this.pagadorId.equals(this.recebedorId)));
-        System.out.println("---------------------------");
+
 
         this.status = StatusTransacao.PENDENTE;
 

@@ -24,11 +24,9 @@ public class TransacaoController {
     private final SolicitarTransacaoUseCase solicitarTransacaoUseCase;
     private final BuscarTransacaoUseCase buscarTransacaoUseCase;
 
-    // Dependências para o PDF
     private final TransacaoRepository transacaoRepository;
     private final GerarExtratoPdfUseCase gerarExtratoPdfUseCase;
 
-    // Construtor
     public TransacaoController(SolicitarTransacaoUseCase solicitarTransacaoUseCase,
                                BuscarTransacaoUseCase buscarTransacaoUseCase,
                                TransacaoRepository transacaoRepository,
@@ -51,7 +49,6 @@ public class TransacaoController {
         return ResponseEntity.ok(resposta);
     }
 
-    // 👇 ENDPOINT DO PDF CORRIGIDO
     @GetMapping("/exportar")
     public ResponseEntity<byte[]> exportarPdf() {
         List<TransacaoEntity> entities = transacaoRepository.findAll();

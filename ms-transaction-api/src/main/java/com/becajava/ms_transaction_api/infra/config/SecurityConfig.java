@@ -27,14 +27,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Libera Swagger
+
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                        // Endpoints de Transação precisam de Token
+
                         .requestMatchers(HttpMethod.POST, "/transactions").authenticated()
                         .requestMatchers(HttpMethod.GET, "/transactions/**").authenticated()
 
-                        // Qualquer outra coisa precisa de Token
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

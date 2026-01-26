@@ -1,6 +1,6 @@
 package com.becajava.ms_user.dto;
 
-import java.math.BigDecimal;
+
 
 public record UsuarioRequestDTO(
         String nome,

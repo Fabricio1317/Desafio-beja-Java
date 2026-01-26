@@ -31,19 +31,17 @@ public class SecurityFilter extends OncePerRequestFilter {
         var token = recuperarToken(request);
 
         if (token != null) {
-            // 1. Valida o token e pega o email
+
             var login = tokenService.validarToken(token);
 
             if (!login.isEmpty()) {
-                // 2. Busca o usuário no banco (Entity)
                 UsuarioEntity usuario = usuarioRepository.findByEmail(login).orElse(null);
 
                 if (usuario != null) {
-                    // 3. Cria a autenticação forçada (Simples, sem roles)
                     var authentication = new UsernamePasswordAuthenticationToken(
                             usuario,
                             null,
-                            Collections.emptyList() // <--- Fix para não dar erro de Authorities
+                            Collections.emptyList()
                     );
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);

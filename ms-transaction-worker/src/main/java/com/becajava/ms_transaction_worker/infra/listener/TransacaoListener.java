@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component; // <--- IMPORTANTE: Faltava importar isso
 
-@Component // <--- OBRIGATÓRIO: Sem isso o Kafka não liga!
+@Component
 public class TransacaoListener {
 
     private final ProcessarTransacaoUseCase processarTransacaoUseCase;
@@ -20,7 +20,7 @@ public class TransacaoListener {
     @KafkaListener(topics = "transaction.requested", groupId = "${spring.kafka.consumer.group-id}")
     public void ouvir(String mensagemJson){
         try {
-            System.out.println("Recebi: " + mensagemJson); // Log para ver chegando
+            System.out.println("Recebi: " + mensagemJson);
 
             TransacaoKafkaDTO dto = objectMapper.readValue(mensagemJson, TransacaoKafkaDTO.class);
             processarTransacaoUseCase.execute(dto.toDomain());
@@ -29,7 +29,7 @@ public class TransacaoListener {
 
         } catch (Exception e) {
             System.err.println("Erro fatal no listener: "+ e.getMessage());
-            e.printStackTrace(); // Ajuda a ver onde quebrou
+            e.printStackTrace();
         }
     }
 }

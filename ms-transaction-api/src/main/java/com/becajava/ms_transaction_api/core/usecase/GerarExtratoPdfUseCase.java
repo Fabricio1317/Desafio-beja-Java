@@ -42,12 +42,10 @@ public class GerarExtratoPdfUseCase {
             titulo.setSpacingAfter(20);
             document.add(titulo);
 
-            // 3. Tabela de 6 Colunas
             PdfPTable table = new PdfPTable(6);
             table.setWidthPercentage(100);
             table.setWidths(new float[]{1f, 1.5f, 1.5f, 2f, 2f, 2.5f});
 
-            // 4. Monta Cabeçalho e Dados
             adicionarCabecalho(table);
             adicionarDados(table, transacoes);
 

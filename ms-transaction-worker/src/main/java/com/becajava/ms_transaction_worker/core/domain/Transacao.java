@@ -11,18 +11,17 @@ public class Transacao {
     private String status;
     private String tipo;
 
-    // Construtor vazio para o Jackson/Hibernate
+
     public Transacao() {
     }
 
-    // Construtor para facilitar a criação no Listener/UseCase
     public Transacao(UUID id, Long pagadorId, Long recebedorId, BigDecimal valor, String status, String tipo) {
         this.id = id;
         this.pagadorId = pagadorId;
         this.recebedorId = recebedorId;
         this.valor = valor;
         this.status = status;
-        this.tipo = tipo; // Atribui antes de validar
+        this.tipo = tipo;
         validar();
     }
 

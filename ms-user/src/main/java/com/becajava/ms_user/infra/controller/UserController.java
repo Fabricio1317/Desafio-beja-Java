@@ -24,19 +24,18 @@ public class UserController {
     private final BuscarUsuarioUseCase buscarUsuarioUseCase;
     private final AtualizarUsuarioUseCase atualizarUsuarioUseCase;
 
-    // 1. Adicionamos o serviço do Excel aqui
     private final ExcelImportService excelImportService;
 
     public UserController(CriarUsuarioUseCase criarUsuarioUseCase,
                           DeletarUseCase deletarUseCase,
                           BuscarUsuarioUseCase buscarUsuarioUseCase,
                           AtualizarUsuarioUseCase atualizarUsuarioUseCase,
-                          ExcelImportService excelImportService) { // <--- Injetamos no construtor
+                          ExcelImportService excelImportService) {
         this.criarUsuarioUseCase = criarUsuarioUseCase;
         this.deletarUseCase = deletarUseCase;
         this.buscarUsuarioUseCase = buscarUsuarioUseCase;
         this.atualizarUsuarioUseCase = atualizarUsuarioUseCase;
-        this.excelImportService = excelImportService; // <--- Atribuímos aqui
+        this.excelImportService = excelImportService;
     }
 
     @PostMapping

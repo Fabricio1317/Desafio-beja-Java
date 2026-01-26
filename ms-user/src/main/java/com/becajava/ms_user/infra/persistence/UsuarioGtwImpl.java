@@ -16,7 +16,7 @@ public class UsuarioGtwImpl implements UsuarioGateway {
 
     @Override
     public Usuario criarUsuario(Usuario usuario) {
-        // Conversão limpa (5 campos)
+
         UsuarioEntity entity = new UsuarioEntity(
                 usuario.getId(),
                 usuario.getNome(),
@@ -83,7 +83,6 @@ public class UsuarioGtwImpl implements UsuarioGateway {
 
         UsuarioEntity salvo = repository.save(entity);
 
-        // CORRIGIDO: Removido salvo.getSaldo()
         return new Usuario(
                 salvo.getId(),
                 salvo.getNome(),

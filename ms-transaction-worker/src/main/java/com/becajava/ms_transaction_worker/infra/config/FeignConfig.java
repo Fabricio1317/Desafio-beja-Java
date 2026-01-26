@@ -14,7 +14,6 @@ public class FeignConfig {
         return new Client.Default(getSSLSocketFactory(), new NoopHostnameVerifier());
     }
 
-    // Essa mágica cria um certificado que aceita tudo
     private SSLSocketFactory getSSLSocketFactory() {
         try {
             TrustManager[] trustAllCerts = new TrustManager[]{
@@ -32,7 +31,7 @@ public class FeignConfig {
         }
     }
 
-    // Ignora verificação do nome do host
+
     private static class NoopHostnameVerifier implements HostnameVerifier {
         @Override
         public boolean verify(String hostname, SSLSession session) {
