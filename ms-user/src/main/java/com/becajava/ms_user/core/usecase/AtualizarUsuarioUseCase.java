@@ -1,6 +1,7 @@
 package com.becajava.ms_user.core.usecase;
 
 import com.becajava.ms_user.core.domain.Usuario;
+import com.becajava.ms_user.core.exception.RegraNegocioException;
 import com.becajava.ms_user.core.gateway.PasswordEncoderGateway;
 import com.becajava.ms_user.core.gateway.UsuarioGateway;
 import com.becajava.ms_user.dto.UsuarioRequestDTO;
@@ -19,17 +20,15 @@ public class AtualizarUsuarioUseCase {
     }
 
     public UsuarioResponseDTO execute(Long id, UsuarioRequestDTO dto) {
-
         Usuario usuarioAntigo = usuarioGateway.buscaPorId(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
-
+                .orElseThrow(() -> new RegraNegocioException("Usuario nao encontrado."));
 
         if (!usuarioAntigo.getEmail().equals(dto.email()) && usuarioGateway.existePorEmail(dto.email())) {
-            throw new RuntimeException("E-mail já cadastrado por outro usuário.");
+            throw new RegraNegocioException("E-mail ja cadastrado por outro usuario.");
         }
 
         if (!usuarioAntigo.getCpf().equals(dto.cpf()) && usuarioGateway.existePorCpf(dto.cpf())) {
-            throw new RuntimeException("CPF já cadastrado por outro usuário.");
+            throw new RegraNegocioException("CPF ja cadastrado por outro usuario.");
         }
 
         String senhaFinal;
@@ -39,7 +38,6 @@ public class AtualizarUsuarioUseCase {
             senhaFinal = usuarioAntigo.getSenha();
         }
 
-
         Usuario usuarioAtualizado = new Usuario(
                 id,
                 dto.nome(),
@@ -47,7 +45,6 @@ public class AtualizarUsuarioUseCase {
                 dto.email(),
                 senhaFinal
         );
-
 
         Usuario salvo = usuarioGateway.atualizar(usuarioAtualizado);
 

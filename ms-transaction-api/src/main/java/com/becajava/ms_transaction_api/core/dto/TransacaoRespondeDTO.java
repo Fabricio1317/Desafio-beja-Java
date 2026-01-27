@@ -1,4 +1,4 @@
-package com.becajava.ms_transaction_api.dto;
+package com.becajava.ms_transaction_api.core.dto;
 
 import com.becajava.ms_transaction_api.core.domain.StatusTransacao;
 import com.becajava.ms_transaction_api.core.domain.Transacao;
@@ -12,6 +12,10 @@ public record TransacaoRespondeDTO(
         BigDecimal valor
 ) {
     public TransacaoRespondeDTO(Transacao transacao){
-        this(transacao.getId(), transacao.getStatus(), transacao.getValor());
+        this(
+                transacao.getId(),
+                transacao.getStatus(),
+                transacao.getValor()
+        );
     }
 }

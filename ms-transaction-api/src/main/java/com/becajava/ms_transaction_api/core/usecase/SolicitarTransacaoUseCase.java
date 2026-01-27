@@ -1,30 +1,48 @@
-    package com.becajava.ms_transaction_api.core.usecase;
+package com.becajava.ms_transaction_api.core.usecase;
 
-    import com.becajava.ms_transaction_api.core.domain.Transacao;
-    import com.becajava.ms_transaction_api.core.gateway.MensageriaGateway;
-    import com.becajava.ms_transaction_api.core.gateway.TransacaoGateway;
-    import com.becajava.ms_transaction_api.dto.TransacaoRequestDTO;
-    import com.becajava.ms_transaction_api.dto.TransacaoRespondeDTO;
+import com.becajava.ms_transaction_api.core.domain.Transacao;
+import com.becajava.ms_transaction_api.core.domain.StatusTransacao;
+import com.becajava.ms_transaction_api.core.exception.RegraDeNegocioException; // <--- Import Novo
+import com.becajava.ms_transaction_api.core.gateway.MensageriaGateway;
+import com.becajava.ms_transaction_api.core.gateway.TransacaoGateway;
+import com.becajava.ms_transaction_api.core.dto.TransacaoRequestDTO;
 
-    public class SolicitarTransacaoUseCase {
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-        private final TransacaoGateway transacaoGateway;
-        private final MensageriaGateway mensageriaGateway;
+public class SolicitarTransacaoUseCase {
 
-        public SolicitarTransacaoUseCase(TransacaoGateway transacaoGateway, MensageriaGateway mensageriaGateway) {
-            this.transacaoGateway = transacaoGateway;
-            this.mensageriaGateway = mensageriaGateway;
-        }
+    private final MensageriaGateway mensageriaGateway;
+    private final TransacaoGateway transacaoGateway;
 
-        public TransacaoRespondeDTO execute(TransacaoRequestDTO dto){
-            Transacao novaTransacao = new Transacao(dto.pagadorId(), dto.recebedorId(), dto.valor(), dto.tipo());
-            Transacao transacaoSalva = transacaoGateway.salvar(novaTransacao);
-            System.out.println("DTO: "+ dto.pagadorId()+ dto.recebedorId());
-
-            mensageriaGateway.enviarParaFila(transacaoSalva);
-
-            return new TransacaoRespondeDTO(transacaoSalva);
-
-
-        }
+    public SolicitarTransacaoUseCase(MensageriaGateway mensageriaGateway, TransacaoGateway transacaoGateway) {
+        this.mensageriaGateway = mensageriaGateway;
+        this.transacaoGateway = transacaoGateway;
     }
+
+    public void execute(TransacaoRequestDTO dto) {
+        // 1. Validação de Regra de Negócio
+        if (dto.valor() == null || dto.valor().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RegraDeNegocioException("O valor da transação deve ser maior que zero.");
+        }
+
+        System.out.println("1. Recebendo solicitação: " + dto.descricao());
+
+        Transacao transacao = new Transacao();
+        transacao.setUsuarioId(dto.usuarioId());
+        transacao.setValor(dto.valor());
+        transacao.setTipo(dto.tipo());
+        transacao.setCategoria(dto.categoria());
+        transacao.setDescricao(dto.descricao());
+        transacao.setDataCriacao(LocalDateTime.now());
+
+        transacao.setStatus(StatusTransacao.PENDENTE);
+
+        Transacao transacaoSalva = transacaoGateway.salvar(transacao);
+        System.out.println("2. Salvo no banco com ID: " + transacaoSalva.getId());
+
+        mensageriaGateway.enviar(transacaoSalva);
+
+        System.out.println("3. Enviado para o Kafka.");
+    }
+}

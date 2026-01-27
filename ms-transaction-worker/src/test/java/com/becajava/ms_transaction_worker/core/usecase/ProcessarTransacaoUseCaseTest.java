@@ -2,83 +2,103 @@ package com.becajava.ms_transaction_worker.core.usecase;
 
 import com.becajava.ms_transaction_worker.core.domain.Transacao;
 import com.becajava.ms_transaction_worker.core.gateway.TransacaoGateway;
-import com.becajava.ms_transaction_worker.core.gateway.ValidadorGateway; // Adicionei o Gateway que faltava
+import com.becajava.ms_transaction_worker.core.gateway.ValidadorGateway;
 import com.becajava.ms_transaction_worker.infra.dto.ContaExternaDTO;
 import com.becajava.ms_transaction_worker.infra.dto.UsuarioDTO;
 import com.becajava.ms_transaction_worker.infra.integration.MockApiFinanceiroClient;
 import com.becajava.ms_transaction_worker.infra.integration.UsuarioClient;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ProcessarTransacaoSucessoTest {
+class ProcessarTransacaoUseCaseTest {
 
-    @Mock private TransacaoGateway transacaoGateway;
-    @Mock private UsuarioClient usuarioClient;
-    @Mock private MockApiFinanceiroClient mockApiFinanceiroClient;
-    @Mock private ValidadorGateway validadorGateway; // Precisa desse mock também!
+    @Mock
+    private TransacaoGateway transacaoGateway;
+
+    @Mock
+    private ValidadorGateway validadorGateway;
+
+    @Mock
+    private UsuarioClient usuarioClient;
+
+    @Mock
+    private MockApiFinanceiroClient financeiroClient;
 
     @InjectMocks
     private ProcessarTransacaoUseCase useCase;
 
     @Test
-    @DisplayName("SUCESSO: Deve debitar do pagador e creditar no recebedor corretamente")
-    void deveAprovarTransferencia() {
-        // --- CENÁRIO ---
-        Long idPagador = 1L;
-        Long idRecebedor = 2L;
+    void deveAprovarTransferenciaComSaldoSuficiente() {
 
-        // Crie a transação USANDO AS VARIÁVEIS DE ID
-        Transacao transacao = new Transacao(
-                UUID.randomUUID(),
-                idPagador, // ID 1
-                idRecebedor, // ID 2
-                BigDecimal.valueOf(100),
-                "PENDENTE",
-                "TRANSFERENCIA"
-        );
+        Transacao transacao = criarTransacao(1L, 2L, new BigDecimal("100.00"), "TRANSFERENCIA");
 
-        // --- MOCKS ---
+        UsuarioDTO pagadorReal = new UsuarioDTO(1L, "12345678900", "daniel@teste.com", "Daniel");
+        UsuarioDTO recebedorReal = new UsuarioDTO(2L, "98765432100", "recebedor@teste.com", "Recebedor");
 
-        // Mock do Pagador (ID 1)
-        UsuarioDTO pagadorDto = new UsuarioDTO(idPagador, "Daniel", "12345678900", "daniel@email.com", BigDecimal.ZERO);
-        when(usuarioClient.buscarPorId(idPagador)).thenReturn(pagadorDto);
+        when(usuarioClient.buscarPorId(1L)).thenReturn(pagadorReal);
+        when(usuarioClient.buscarPorId(2L)).thenReturn(recebedorReal);
 
-        // Mock do Recebedor (ID 2) - IMPORTANTE!
-        // Seu código busca o recebedor também: "var recebedor = ... usuarioClient.buscarPorId(transacao.getRecebedorId())"
-        UsuarioDTO recebedorDto = new UsuarioDTO(idRecebedor, "Recebedor", "98765432100", "recebedor@email.com", BigDecimal.ZERO);
-        when(usuarioClient.buscarPorId(idRecebedor)).thenReturn(recebedorDto);
+        ContaExternaDTO carteiraPagador = new ContaExternaDTO("1", 1L, new BigDecimal("500.00"));
+        ContaExternaDTO carteiraRecebedor = new ContaExternaDTO("20", 2L, BigDecimal.ZERO);
 
-        // Mock dos Saldos no Banco Central
-        when(mockApiFinanceiroClient.buscarConta(idPagador)).thenReturn(new ContaExternaDTO(idPagador, BigDecimal.valueOf(500)));
-        when(mockApiFinanceiroClient.buscarConta(idRecebedor)).thenReturn(new ContaExternaDTO(idRecebedor, BigDecimal.ZERO));
+        when(financeiroClient.buscarCarteiraPorUserId(1L)).thenReturn(List.of(carteiraPagador));
+        when(financeiroClient.buscarCarteiraPorUserId(2L)).thenReturn(List.of(carteiraRecebedor));
 
-        // Mock do Dólar (Seu código chama validadorGateway.obterCotacaoDolar())
         when(validadorGateway.obterCotacaoDolar()).thenReturn(5.0);
 
-        // --- EXECUÇÃO ---
+
         useCase.execute(transacao);
 
-        // --- VALIDAÇÃO ---
+        verify(financeiroClient, times(2)).atualizarSaldo(anyString(), any(ContaExternaDTO.class));
+        verify(transacaoGateway).atualizarStatus(transacao.getId(), "APROVADA");
+    }
 
-        // Verifica atualização no Banco Central
-        verify(mockApiFinanceiroClient).atualizarSaldoExterno(eq(idPagador), argThat(dto -> dto.saldo().compareTo(BigDecimal.valueOf(400)) == 0));
-        verify(mockApiFinanceiroClient).atualizarSaldoExterno(eq(idRecebedor), argThat(dto -> dto.saldo().compareTo(BigDecimal.valueOf(100)) == 0));
+    @Test
+    void deveReprovarTransferenciaSemSaldo() {
+        Transacao transacao = criarTransacao(1L, 2L, new BigDecimal("1000.00"), "TRANSFERENCIA");
 
-        // Verifica atualização no Banco Local (MS-User)
-        verify(usuarioClient).atualizarSaldo(eq(idPagador), eq(BigDecimal.valueOf(-100))); // Seu código faz "saldo - valor". Se o saldo do DTO mockado é ZERO, fica negativo.
-        // DICA: No mock do UsuarioDTO, coloque saldo 500 se quiser que fique positivo no banco local também.
+        UsuarioDTO pagadorReal = new UsuarioDTO(1L, "12345678900", "daniel@teste.com", "Daniel");
+        when(usuarioClient.buscarPorId(1L)).thenReturn(pagadorReal);
 
-        // Verifica se salvou como APROVADA
-        verify(transacaoGateway).atualizar(argThat(t -> t.getStatus().equals("APROVADA")));
+
+        UsuarioDTO recebedorReal = new UsuarioDTO(2L, "98765432100", "recebedor@teste.com", "Recebedor");
+        when(usuarioClient.buscarPorId(2L)).thenReturn(recebedorReal);
+
+
+        ContaExternaDTO carteiraPagador = new ContaExternaDTO("10", 1L, new BigDecimal("50.00"));
+        when(financeiroClient.buscarCarteiraPorUserId(1L)).thenReturn(List.of(carteiraPagador));
+
+        ContaExternaDTO carteiraRecebedor = new ContaExternaDTO("20", 2L, BigDecimal.ZERO);
+        when(financeiroClient.buscarCarteiraPorUserId(2L)).thenReturn(List.of(carteiraRecebedor));
+
+
+        useCase.execute(transacao);
+
+
+        verify(transacaoGateway).atualizarStatus(transacao.getId(), "REPROVADA");
+
+
+        verify(financeiroClient, never()).atualizarSaldo(anyString(), any());
+    }
+
+    private Transacao criarTransacao(Long pagador, Long recebedor, BigDecimal valor, String tipo) {
+        Transacao t = new Transacao();
+        t.setId(UUID.randomUUID());
+        t.setPagadorId(pagador);
+        t.setRecebedorId(recebedor);
+        t.setValor(valor);
+        t.setTipo(tipo);
+        return t;
     }
 }

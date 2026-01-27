@@ -1,21 +1,18 @@
 package com.becajava.ms_transaction_api.infra.controller;
 
 import com.becajava.ms_transaction_api.core.domain.Transacao;
+import com.becajava.ms_transaction_api.core.dto.TransacaoRequestDTO;
 import com.becajava.ms_transaction_api.core.usecase.BuscarTransacaoUseCase;
 import com.becajava.ms_transaction_api.core.usecase.GerarExtratoPdfUseCase;
 import com.becajava.ms_transaction_api.core.usecase.SolicitarTransacaoUseCase;
-import com.becajava.ms_transaction_api.dto.TransacaoRequestDTO;
-import com.becajava.ms_transaction_api.dto.TransacaoRespondeDTO;
-import com.becajava.ms_transaction_api.infra.persistence.TransacaoEntity;
-import com.becajava.ms_transaction_api.infra.persistence.TransacaoRepository;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/transacoes")
@@ -23,58 +20,32 @@ public class TransacaoController {
 
     private final SolicitarTransacaoUseCase solicitarTransacaoUseCase;
     private final BuscarTransacaoUseCase buscarTransacaoUseCase;
-
-    private final TransacaoRepository transacaoRepository;
     private final GerarExtratoPdfUseCase gerarExtratoPdfUseCase;
 
-    public TransacaoController(SolicitarTransacaoUseCase solicitarTransacaoUseCase,
-                               BuscarTransacaoUseCase buscarTransacaoUseCase,
-                               TransacaoRepository transacaoRepository,
-                               GerarExtratoPdfUseCase gerarExtratoPdfUseCase) {
+    public TransacaoController(
+            SolicitarTransacaoUseCase solicitarTransacaoUseCase,
+            BuscarTransacaoUseCase buscarTransacaoUseCase,
+            GerarExtratoPdfUseCase gerarExtratoPdfUseCase
+    ) {
         this.solicitarTransacaoUseCase = solicitarTransacaoUseCase;
         this.buscarTransacaoUseCase = buscarTransacaoUseCase;
-        this.transacaoRepository = transacaoRepository;
         this.gerarExtratoPdfUseCase = gerarExtratoPdfUseCase;
     }
 
     @PostMapping
-    public ResponseEntity<TransacaoRespondeDTO> criar(@RequestBody TransacaoRequestDTO dto){
-        TransacaoRespondeDTO resposta = solicitarTransacaoUseCase.execute(dto);
-        return ResponseEntity.accepted().body(resposta);
+    public ResponseEntity<String> criar(@RequestBody @Valid TransacaoRequestDTO request) {
+        solicitarTransacaoUseCase.execute(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Transação enviada para processamento!");
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TransacaoRespondeDTO> buscar(@PathVariable UUID id){
-        TransacaoRespondeDTO resposta = buscarTransacaoUseCase.execute(id);
-        return ResponseEntity.ok(resposta);
-    }
-
-    @GetMapping("/exportar")
-    public ResponseEntity<byte[]> exportarPdf() {
-        List<TransacaoEntity> entities = transacaoRepository.findAll();
-
-
-        List<Transacao> transacoesDomain = entities.stream()
-                .map(entity -> {
-                    Transacao t = new Transacao();
-                    t.setId(entity.getId());
-                    t.setPagadorId(entity.getPagadorId());
-                    t.setRecebedorId(entity.getRecebedorId());
-                    t.setValor(entity.getValor());
-                    t.setTipo(entity.getTipo());
-                    t.setStatus(entity.getStatus());
-                    t.setDataCriacao(entity.getDataCriacao());
-                    return t;
-                })
-                .collect(Collectors.toList());
-
-
-        byte[] pdfBytes = gerarExtratoPdfUseCase.gerar(transacoesDomain);
-
+    @GetMapping("/exportar/{usuarioId}")
+    public ResponseEntity<byte[]> baixarPdf(@PathVariable Long usuarioId) {
+        List<Transacao> transacoes = buscarTransacaoUseCase.buscarTodasPorUsuario(usuarioId);
+        byte[] pdfBytes = gerarExtratoPdfUseCase.gerar(transacoes);
 
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=extrato-beca.pdf")
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=extrato_usuario_" + usuarioId + ".pdf")
                 .body(pdfBytes);
     }
 }

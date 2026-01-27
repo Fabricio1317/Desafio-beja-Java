@@ -1,6 +1,7 @@
 package com.becajava.ms_user.core.usecase;
 
 import com.becajava.ms_user.core.domain.Usuario;
+import com.becajava.ms_user.core.exception.RegraNegocioException;
 import com.becajava.ms_user.core.gateway.PasswordEncoderGateway;
 import com.becajava.ms_user.core.gateway.TokenGateway;
 import com.becajava.ms_user.core.gateway.UsuarioGateway;
@@ -19,10 +20,11 @@ public class LoginUsuarioUseCase {
     }
 
     public LoginResponseDTO execute(LoginRequestDTO dto){
-        Usuario usuario = usuarioGateway.buscaPorEmail(dto.email()).orElseThrow(() -> new IllegalArgumentException("Usuario ou senha invalidos"));
+        Usuario usuario = usuarioGateway.buscaPorEmail(dto.email())
+                .orElseThrow(() -> new RegraNegocioException("Usuario ou senha invalidos"));
 
         if (!passwordEncoderGateway.matches(dto.senha(), usuario.getSenha())){
-            throw new IllegalArgumentException("Usuario ou senha invalidos");
+            throw new RegraNegocioException("Usuario ou senha invalidos");
         }
 
         String token = tokenGateway.gerarToken(usuario);

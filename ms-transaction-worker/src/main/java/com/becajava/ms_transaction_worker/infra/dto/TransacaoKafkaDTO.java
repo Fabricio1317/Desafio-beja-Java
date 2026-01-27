@@ -1,28 +1,27 @@
 package com.becajava.ms_transaction_worker.infra.dto;
 
+import com.becajava.ms_transaction_worker.core.domain.StatusTransacao;
 import com.becajava.ms_transaction_worker.core.domain.Transacao;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // <--- IMPORTANTE
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public record TransacaoKafkaDTO(
         UUID id,
-        Long pagadorId,
-        Long recebedorId,
+        Long usuarioId,
         BigDecimal valor,
-        String status,
-        String tipo
+        String tipo,
+        String categoria,
+        String descricao
 ) {
-
-    public Transacao toDomain(){
-        Transacao transacao = new Transacao();
-        transacao.setId(this.id);
-        transacao.setPagadorId(this.pagadorId);
-        transacao.setRecebedorId(this.recebedorId);
-        transacao.setValor(this.valor);
-        transacao.setStatus(this.status);
-        transacao.setTipo(this.tipo);
-        return transacao;
+    public Transacao toDomain() {
+        Transacao t = new Transacao();
+        t.setId(this.id);
+        t.setUsuarioId(this.usuarioId);
+        t.setValor(this.valor);
+        t.setTipo(this.tipo);
+        t.setCategoria(this.categoria);
+        t.setDescricao(this.descricao);
+        t.setStatus(StatusTransacao.PENDENTE); // Começa sempre Pendente
+        return t;
     }
 }

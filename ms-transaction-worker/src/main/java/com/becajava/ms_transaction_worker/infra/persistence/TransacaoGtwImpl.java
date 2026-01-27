@@ -1,5 +1,6 @@
 package com.becajava.ms_transaction_worker.infra.persistence;
 
+import com.becajava.ms_transaction_worker.core.domain.StatusTransacao;
 import com.becajava.ms_transaction_worker.core.domain.Transacao;
 import com.becajava.ms_transaction_worker.core.gateway.TransacaoGateway;
 import org.springframework.stereotype.Component;
@@ -14,27 +15,30 @@ public class TransacaoGtwImpl implements TransacaoGateway {
         this.repository = repository;
     }
 
-
     @Override
     public void atualizar(Transacao transacao) {
-        TransacaoEntity entity = new TransacaoEntity(
-                transacao.getId(),
-                transacao.getPagadorId(),
-                transacao.getRecebedorId(),
-                transacao.getStatus(),
-                transacao.getValor(),
-                transacao.getTipo()
-        );
+        TransacaoEntity entity = converterParaEntity(transacao);
         repository.save(entity);
     }
 
     @Override
-    public void atualizarStatus(UUID id, String novoStatus) {
+    public void atualizarStatus(UUID id, StatusTransacao novoStatus) {
         TransacaoEntity entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transação não encontrada para atualização de status"));
+                .orElseThrow(() -> new RuntimeException("Transação não encontrada no BD Local"));
 
         entity.setStatus(novoStatus);
-
         repository.save(entity);
+    }
+
+    private TransacaoEntity converterParaEntity(Transacao t) {
+        return new TransacaoEntity(
+                t.getId(),
+                t.getUsuarioId(),
+                t.getStatus(),
+                t.getValor(),
+                t.getTipo(),
+                t.getCategoria(),
+                t.getDescricao()
+        );
     }
 }

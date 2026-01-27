@@ -1,5 +1,6 @@
 package com.becajava.ms_user.core.usecase;
 
+import com.becajava.ms_user.core.exception.RegraNegocioException;
 import com.becajava.ms_user.core.gateway.UsuarioGateway;
 
 public class DeletarUseCase {
@@ -11,7 +12,7 @@ public class DeletarUseCase {
 
     public void execute(Long id){
         if (usuarioGateway.buscaPorId(id).isEmpty()){
-            throw new IllegalArgumentException("Usuario nao encontrado");
+            throw new RegraNegocioException("Usuario nao encontrado");
         }
         usuarioGateway.deletar(id);
     }

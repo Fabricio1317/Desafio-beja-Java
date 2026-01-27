@@ -4,7 +4,7 @@ import com.becajava.ms_transaction_worker.core.usecase.ProcessarTransacaoUseCase
 import com.becajava.ms_transaction_worker.infra.dto.TransacaoKafkaDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.stereotype.Component; // <--- IMPORTANTE: Faltava importar isso
+import org.springframework.stereotype.Component;
 
 @Component
 public class TransacaoListener {
@@ -17,19 +17,21 @@ public class TransacaoListener {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = "transaction.requested", groupId = "${spring.kafka.consumer.group-id}")
-    public void ouvir(String mensagemJson){
+    @KafkaListener(topics = "transaction.requested", groupId = "worker-producao-limpo-v1") // Mantenha o grupo do seu properties
+    public void ouvir(String mensagemJson) {
         try {
-            System.out.println("Recebi: " + mensagemJson);
+            Thread.sleep(500);
+            System.out.println(" Mensagem recebida: " + mensagemJson);
+
+            if (mensagemJson.startsWith("\"")) {
+                mensagemJson = objectMapper.readValue(mensagemJson, String.class);
+            }
 
             TransacaoKafkaDTO dto = objectMapper.readValue(mensagemJson, TransacaoKafkaDTO.class);
             processarTransacaoUseCase.execute(dto.toDomain());
 
-            System.out.println("Processado com sucesso!");
-
         } catch (Exception e) {
-            System.err.println("Erro fatal no listener: "+ e.getMessage());
-            e.printStackTrace();
+            System.err.println("Erro ao processar: " + e.getMessage());
         }
     }
 }

@@ -1,119 +1,55 @@
 package com.becajava.ms_transaction_api.core.domain;
 
-
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Transacao {
     private UUID id;
-    private Long pagadorId;
-    private Long recebedorId;
+    private Long usuarioId;
     private BigDecimal valor;
+    private String tipo;
+    private String categoria;
+    private String descricao;
+
     private StatusTransacao status;
     private LocalDateTime dataCriacao;
-    private String tipo;
 
-    public Transacao(Long pagadorId, Long recebedorId, BigDecimal valor, String tipo) {
-        this.id = UUID.randomUUID();
-        this.dataCriacao = LocalDateTime.now();
-        this.pagadorId = pagadorId;
-        this.recebedorId = recebedorId;
+    public Transacao() {}
+
+    public Transacao(UUID id, Long usuarioId, BigDecimal valor, String tipo, String categoria, String descricao, StatusTransacao status, LocalDateTime dataCriacao) {
+        this.id = id;
+        this.usuarioId = usuarioId;
         this.valor = valor;
         this.tipo = tipo;
-
-        System.out.println("Pagador recebido: " + this.pagadorId); System.out.println("Recebedor recebido: " + this.recebedorId);
-        System.out.println("São iguais? " + (this.pagadorId != null && this.pagadorId.equals(this.recebedorId)));
-
-
-        this.status = StatusTransacao.PENDENTE;
-
-
-
-        validar();
-    }
-
-    public Transacao() {
-    }
-
-    public Transacao(UUID id, Long pagadorId, Long recebedorId, BigDecimal valor, StatusTransacao status, LocalDateTime dataCriacao, String tipo) {
-        this.id = id;
-        this.pagadorId = pagadorId;
-        this.recebedorId = recebedorId;
-        this.valor = valor;
+        this.categoria = categoria;
+        this.descricao = descricao;
         this.status = status;
         this.dataCriacao = dataCriacao;
-        this.tipo = tipo;
     }
 
 
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
+    public Long getUsuarioId() { return usuarioId; }
+    public void setUsuarioId(Long usuarioId) { this.usuarioId = usuarioId; }
 
-    private void validar() {
-        if (this.valor.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Valor da transação deve ser positivo");
-        }
-        if ("TRANSFERENCIA".equalsIgnoreCase(this.tipo)) {
-            if (this.pagadorId != null && this.pagadorId.equals(this.recebedorId)) {
-                throw new IllegalArgumentException("Pagador e recebedor não podem ser o mesmo");
-            }
-        }
-    }
+    public BigDecimal getValor() { return valor; }
+    public void setValor(BigDecimal valor) { this.valor = valor; }
 
-    public LocalDateTime getDataCriacao() {
-        return dataCriacao;
-    }
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
 
-    public UUID getId() {
-        return id;
-    }
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
 
-    public Long getPagadorId() {
-        return pagadorId;
-    }
+    public String getDescricao() { return descricao; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
 
-    public Long getRecebedorId() {
-        return recebedorId;
-    }
+    public StatusTransacao getStatus() { return status; }
+    public void setStatus(StatusTransacao status) { this.status = status; }
 
-    public StatusTransacao getStatus() {
-        return status;
-    }
-
-    public BigDecimal getValor() {
-        return valor;
-    }
-
-    public String getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
-    }
-
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public void setPagadorId(Long pagadorId) {
-        this.pagadorId = pagadorId;
-    }
-
-    public void setRecebedorId(Long recebedorId) {
-        this.recebedorId = recebedorId;
-    }
-
-    public void setStatus(StatusTransacao status) {
-        this.status = status;
-    }
-
-    public void setValor(BigDecimal valor) {
-        this.valor = valor;
-    }
+    public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
 }
