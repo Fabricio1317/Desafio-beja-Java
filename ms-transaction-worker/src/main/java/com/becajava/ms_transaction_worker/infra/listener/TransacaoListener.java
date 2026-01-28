@@ -17,7 +17,7 @@ public class TransacaoListener {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = "transaction.requested", groupId = "worker-producao-limpo-v1") // Mantenha o grupo do seu properties
+    @KafkaListener(topics = "transaction.requested", groupId = "worker-producao-limpo-v1")
     public void ouvir(String mensagemJson) {
         try {
             Thread.sleep(500);

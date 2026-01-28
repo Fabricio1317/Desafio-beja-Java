@@ -44,7 +44,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                 e.printStackTrace();
             }
         } else {
-            System.out.println("--- DEBUG: Nenhum token encontrado no Header.");
+            System.out.println("Nenhum token encontrado no Header.");
         }
 
         filterChain.doFilter(request, response);

@@ -21,7 +21,7 @@ public class SolicitarTransacaoUseCase {
     }
 
     public void execute(TransacaoRequestDTO dto) {
-        // 1. Validação de Regra de Negócio
+
         if (dto.valor() == null || dto.valor().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RegraDeNegocioException("O valor da transação deve ser maior que zero.");
         }

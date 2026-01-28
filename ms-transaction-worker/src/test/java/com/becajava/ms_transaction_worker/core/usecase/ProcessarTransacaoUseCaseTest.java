@@ -1,27 +1,29 @@
 package com.becajava.ms_transaction_worker.core.usecase;
 
+import com.becajava.ms_transaction_worker.core.domain.StatusTransacao;
 import com.becajava.ms_transaction_worker.core.domain.Transacao;
 import com.becajava.ms_transaction_worker.core.gateway.TransacaoGateway;
 import com.becajava.ms_transaction_worker.core.gateway.ValidadorGateway;
 import com.becajava.ms_transaction_worker.infra.dto.ContaExternaDTO;
-import com.becajava.ms_transaction_worker.infra.dto.UsuarioDTO;
 import com.becajava.ms_transaction_worker.infra.integration.MockApiFinanceiroClient;
-import com.becajava.ms_transaction_worker.infra.integration.UsuarioClient;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 class ProcessarTransacaoUseCaseTest {
+
+    @InjectMocks
+    private ProcessarTransacaoUseCase useCase;
 
     @Mock
     private TransacaoGateway transacaoGateway;
@@ -30,75 +32,52 @@ class ProcessarTransacaoUseCaseTest {
     private ValidadorGateway validadorGateway;
 
     @Mock
-    private UsuarioClient usuarioClient;
-
-    @Mock
     private MockApiFinanceiroClient financeiroClient;
 
-    @InjectMocks
-    private ProcessarTransacaoUseCase useCase;
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
-    void deveAprovarTransferenciaComSaldoSuficiente() {
+    @DisplayName("Deve aprovar depósito e atualizar saldo corretamente")
+    void deveAprovarDeposito() {
 
-        Transacao transacao = criarTransacao(1L, 2L, new BigDecimal("100.00"), "TRANSFERENCIA");
+        UUID transacaoId = UUID.randomUUID();
 
-        UsuarioDTO pagadorReal = new UsuarioDTO(1L, "12345678900", "daniel@teste.com", "Daniel");
-        UsuarioDTO recebedorReal = new UsuarioDTO(2L, "98765432100", "recebedor@teste.com", "Recebedor");
+        Transacao transacao = new Transacao();
+        transacao.setId(transacaoId);
+        transacao.setUsuarioId(1L);
+        transacao.setValor(BigDecimal.valueOf(100.0));
+        transacao.setTipo("DEPOSITO");
+        transacao.setDescricao("Recebimento de Salario");
 
-        when(usuarioClient.buscarPorId(1L)).thenReturn(pagadorReal);
-        when(usuarioClient.buscarPorId(2L)).thenReturn(recebedorReal);
+        ContaExternaDTO contaMock = new ContaExternaDTO("10", 1L, BigDecimal.valueOf(500.0));
 
-        ContaExternaDTO carteiraPagador = new ContaExternaDTO("1", 1L, new BigDecimal("500.00"));
-        ContaExternaDTO carteiraRecebedor = new ContaExternaDTO("20", 2L, BigDecimal.ZERO);
-
-        when(financeiroClient.buscarCarteiraPorUserId(1L)).thenReturn(List.of(carteiraPagador));
-        when(financeiroClient.buscarCarteiraPorUserId(2L)).thenReturn(List.of(carteiraRecebedor));
-
+        when(validadorGateway.usuarioExiste(1L)).thenReturn(true);
+        when(financeiroClient.buscarCarteiraPorUserId(1L)).thenReturn(List.of(contaMock));
         when(validadorGateway.obterCotacaoDolar()).thenReturn(5.0);
 
-
         useCase.execute(transacao);
 
-        verify(financeiroClient, times(2)).atualizarSaldo(anyString(), any(ContaExternaDTO.class));
-        verify(transacaoGateway).atualizarStatus(transacao.getId(), "APROVADA");
+        verify(financeiroClient).atualizarSaldo(eq("10"), argThat(dto ->
+                dto.getSaldo().compareTo(BigDecimal.valueOf(600.0)) == 0
+        ));
+
+        verify(transacaoGateway).atualizarStatus(eq(transacaoId), eq(StatusTransacao.APROVADA));
     }
 
     @Test
-    void deveReprovarTransferenciaSemSaldo() {
-        Transacao transacao = criarTransacao(1L, 2L, new BigDecimal("1000.00"), "TRANSFERENCIA");
-
-        UsuarioDTO pagadorReal = new UsuarioDTO(1L, "12345678900", "daniel@teste.com", "Daniel");
-        when(usuarioClient.buscarPorId(1L)).thenReturn(pagadorReal);
-
-
-        UsuarioDTO recebedorReal = new UsuarioDTO(2L, "98765432100", "recebedor@teste.com", "Recebedor");
-        when(usuarioClient.buscarPorId(2L)).thenReturn(recebedorReal);
-
-
-        ContaExternaDTO carteiraPagador = new ContaExternaDTO("10", 1L, new BigDecimal("50.00"));
-        when(financeiroClient.buscarCarteiraPorUserId(1L)).thenReturn(List.of(carteiraPagador));
-
-        ContaExternaDTO carteiraRecebedor = new ContaExternaDTO("20", 2L, BigDecimal.ZERO);
-        when(financeiroClient.buscarCarteiraPorUserId(2L)).thenReturn(List.of(carteiraRecebedor));
-
+    @DisplayName("Deve reprovar transação se o valor for negativo")
+    void deveReprovarValorNegativo() {
+        UUID transacaoId = UUID.randomUUID();
+        Transacao transacao = new Transacao();
+        transacao.setId(transacaoId);
+        transacao.setValor(BigDecimal.valueOf(-50.0));
 
         useCase.execute(transacao);
 
-
-        verify(transacaoGateway).atualizarStatus(transacao.getId(), "REPROVADA");
-
-
+        verify(transacaoGateway).atualizarStatus(eq(transacaoId), eq(StatusTransacao.REPROVADA));
         verify(financeiroClient, never()).atualizarSaldo(anyString(), any());
-    }
-
-    private Transacao criarTransacao(Long pagador, Long recebedor, BigDecimal valor, String tipo) {
-        Transacao t = new Transacao();
-        t.setId(UUID.randomUUID());
-        t.setPagadorId(pagador);
-        t.setRecebedorId(recebedor);
-        t.setValor(valor);
-        t.setTipo(tipo);
-        return t;
     }
 }

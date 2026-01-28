@@ -42,12 +42,10 @@ public class KafkaMensageriaGateway implements MensageriaGateway {
 
         } catch (Exception e) {
             log.error(" FALHA ao enviar mensagem para o Kafka (ID: {}). Erro: {}", transacao.getId(), e.getMessage());
-            // Lançamos RuntimeException para que o Controller saiba que deu erro 500
             throw new RuntimeException("Erro de comunicação com o sistema de mensageria.", e);
         }
     }
 
-    // Mantive o seu record interno
     private record TransactionMessage(
             UUID id,
             Long usuarioId,

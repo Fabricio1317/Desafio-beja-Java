@@ -18,7 +18,7 @@ import java.util.Locale;
 public class GerarExtratoPdfUseCase {
 
     public byte[] gerar(List<Transacao> transacoes) {
-        // Validação defensiva (caso o BuscarUseCase falhe ou seja chamado de outro lugar)
+
         if (transacoes == null || transacoes.isEmpty()) {
             throw new RegraDeNegocioException("A lista de transações está vazia. Impossível gerar PDF.");
         }
@@ -48,7 +48,6 @@ public class GerarExtratoPdfUseCase {
             document.close();
 
         } catch (DocumentException e) {
-            // Mantemos RuntimeException aqui pois é erro técnico da lib de PDF, não de regra
             throw new RuntimeException("Erro interno ao gerar o arquivo PDF", e);
         }
 

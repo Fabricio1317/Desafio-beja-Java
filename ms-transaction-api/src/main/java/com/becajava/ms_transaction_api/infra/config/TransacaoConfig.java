@@ -16,7 +16,6 @@ public class TransacaoConfig {
 
     @Bean
     public SolicitarTransacaoUseCase solicitarTransacaoUseCase(MensageriaGateway mensageriaGateway, TransacaoGateway transacaoGateway){
-
         return new SolicitarTransacaoUseCase(mensageriaGateway, transacaoGateway);
     }
 
