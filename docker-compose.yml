@@ -49,12 +49,8 @@ services:
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: dev12345
       POSTGRES_DB: user_db
-<<<<<<< HEAD
-     
-=======
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
+<<<<<<< HEAD
 
   ms-user:
     build: ./ms-user
@@ -99,5 +95,7 @@ services:
       SPRING_KAFKA_CONSUMER_GROUP_ID: worker-producao-limpo-v1
 
 >>>>>>> 339e773b2101143d09da8577be08353d81b3caab
+=======
+>>>>>>> 58bdd51 (Adicionando o Dockerfile)
 volumes:
   postgres_data:
