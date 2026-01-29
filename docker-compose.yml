@@ -49,6 +49,54 @@ services:
       POSTGRES_USER: devuser
       POSTGRES_PASSWORD: dev12345
       POSTGRES_DB: user_db
+<<<<<<< HEAD
      
+=======
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+  ms-user:
+    build: ./ms-user
+    container_name: ms-user
+    depends_on:
+      - postgres
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433/user_db
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: dev12345
+      API_SECURITY_TOKEN_SECRET: 1@3$$5¨7ddaP
+
+  ms-transaction-api:
+    build: ./ms-transaction-api
+    container_name: ms-transaction-api
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433transacao_db
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: dev12345
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      API_SECURITY_TOKEN_SECRET: 1@3$$5¨7ddaP
+
+  ms-transaction-worker:
+    build: ./ms-transaction-worker
+    container_name: ms-transaction-worker
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433/transacao_db
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: dev12345
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: worker-producao-limpo-v1
+
+>>>>>>> 339e773b2101143d09da8577be08353d81b3caab
 volumes:
   postgres_data:
