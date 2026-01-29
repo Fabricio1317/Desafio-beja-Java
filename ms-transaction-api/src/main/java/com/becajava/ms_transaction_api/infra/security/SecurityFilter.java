@@ -5,13 +5,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -24,35 +25,47 @@ public class SecurityFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
         var token = this.recoverToken(request);
 
-        if(token != null){
-            System.out.println("Token encontrado: " + token.substring(0, 10) + "...");
+
+        String requestURI = request.getRequestURI();
+        if (isPublicRoute(requestURI)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (token != null) {
             try {
                 var login = tokenService.validateToken(token);
-                System.out.println(" Token validado com sucesso! Usuário: " + login);
 
-                if(!login.isEmpty()){
-                    var authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+                if (!login.isEmpty()) {
+
+                    String role = tokenService.getRoleFromToken(token);
+
+                    var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+
                     var authentication = new UsernamePasswordAuthenticationToken(login, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    System.out.println("Autenticação setada no contexto. Acesso liberado.");
+
+                    System.out.println("Usuário: " + login + " | Role: " + role);
                 }
             } catch (Exception e) {
-                System.out.println("ERRO ao validar token: " + e.getMessage());
-                e.printStackTrace();
+                System.out.println("Erro na validação: " + e.getMessage());
             }
-        } else {
-            System.out.println("Nenhum token encontrado no Header.");
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String recoverToken(HttpServletRequest request){
+    private boolean isPublicRoute(String uri) {
+        return uri.contains("/swagger-ui") || uri.contains("/v3/api-docs") ||
+                uri.contains("/webjars") || uri.contains("/status") ||
+                uri.contains("/favicon.ico") || uri.contains("/error");
+    }
+
+    private String recoverToken(HttpServletRequest request) {
         var authHeader = request.getHeader("Authorization");
-        if(authHeader == null) return null;
+        if (authHeader == null) return null;
         return authHeader.replace("Bearer ", "");
     }
 }

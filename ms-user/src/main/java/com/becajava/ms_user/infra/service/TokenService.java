@@ -26,6 +26,7 @@ public class TokenService implements TokenGateway {
             return JWT.create()
                     .withIssuer("ms-user")
                     .withSubject(usuario.getEmail())
+                    .withClaim("role", usuario.getRole().name())
                     .withExpiresAt(gerarDataExpiracao())
                     .sign(algorithm);
 
@@ -34,7 +35,6 @@ public class TokenService implements TokenGateway {
         }
     }
 
-
     public String validarToken(String token) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
@@ -42,7 +42,7 @@ public class TokenService implements TokenGateway {
                     .withIssuer("ms-user")
                     .build()
                     .verify(token)
-                    .getSubject(); // Devolve o e-mail
+                    .getSubject();
         } catch (JWTVerificationException exception){
             return "";
         }

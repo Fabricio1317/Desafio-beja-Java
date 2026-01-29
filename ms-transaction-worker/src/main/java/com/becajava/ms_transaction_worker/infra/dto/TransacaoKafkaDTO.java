@@ -21,7 +21,7 @@ public record TransacaoKafkaDTO(
         t.setTipo(this.tipo);
         t.setCategoria(this.categoria);
         t.setDescricao(this.descricao);
-        t.setStatus(StatusTransacao.PENDENTE); // Começa sempre Pendente
+        t.setStatus(StatusTransacao.PENDENTE);
         return t;
     }
 }

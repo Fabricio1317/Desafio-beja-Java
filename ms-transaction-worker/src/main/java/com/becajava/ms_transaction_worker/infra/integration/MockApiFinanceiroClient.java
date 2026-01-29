@@ -12,6 +12,8 @@ public interface MockApiFinanceiroClient {
     @GetMapping("/carteiras")
     List<ContaExternaDTO> buscarCarteiraPorUserId(@RequestParam("userId") Long userId);
 
+
     @PutMapping("/carteiras/{id}")
     void atualizarSaldo(@PathVariable("id") String id, @RequestBody ContaExternaDTO dto);
+
 }

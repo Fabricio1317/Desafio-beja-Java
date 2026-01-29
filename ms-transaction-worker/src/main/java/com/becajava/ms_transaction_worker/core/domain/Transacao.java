@@ -8,7 +8,7 @@ public class Transacao {
     private Long usuarioId;
     private BigDecimal valor;
     private StatusTransacao status;
-    private String tipo;      // RECEITA ou DESPESA
+    private String tipo;
     private String categoria;
     private String descricao;
 

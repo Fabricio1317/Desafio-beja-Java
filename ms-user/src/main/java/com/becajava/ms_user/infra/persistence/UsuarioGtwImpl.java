@@ -18,22 +18,26 @@ public class UsuarioGtwImpl implements UsuarioGateway {
     @Override
     public Usuario criarUsuario(Usuario usuario) {
         try {
+
             UsuarioEntity entity = new UsuarioEntity(
                     usuario.getId(),
                     usuario.getNome(),
                     usuario.getCpf(),
                     usuario.getEmail(),
-                    usuario.getSenha()
+                    usuario.getSenha(),
+                    usuario.getRole()
             );
 
             UsuarioEntity salvo = repository.save(entity);
+
 
             return new Usuario(
                     salvo.getId(),
                     salvo.getNome(),
                     salvo.getCpf(),
                     salvo.getEmail(),
-                    salvo.getSenha()
+                    salvo.getSenha(),
+                    salvo.getRole()
             );
         } catch (Exception e) {
             throw new RegraNegocioException("Erro ao salvar usuario no banco de dados");
@@ -66,7 +70,8 @@ public class UsuarioGtwImpl implements UsuarioGateway {
                     entity.getNome(),
                     entity.getCpf(),
                     entity.getEmail(),
-                    entity.getSenha()
+                    entity.getSenha(),
+                    entity.getRole()
             ));
         } catch (Exception e) {
             throw new RegraNegocioException("Erro ao buscar usuario por email");
@@ -76,12 +81,14 @@ public class UsuarioGtwImpl implements UsuarioGateway {
     @Override
     public Optional<Usuario> buscaPorId(Long id) {
         try {
+
             return repository.findById(id).map(entity -> new Usuario(
                     entity.getId(),
                     entity.getNome(),
                     entity.getCpf(),
                     entity.getEmail(),
-                    entity.getSenha()
+                    entity.getSenha(),
+                    entity.getRole()
             ));
         } catch (Exception e) {
             throw new RegraNegocioException("Erro ao buscar usuario por ID");
@@ -96,17 +103,20 @@ public class UsuarioGtwImpl implements UsuarioGateway {
                     usuario.getNome(),
                     usuario.getCpf(),
                     usuario.getEmail(),
-                    usuario.getSenha()
+                    usuario.getSenha(),
+                    usuario.getRole()
             );
 
             UsuarioEntity salvo = repository.save(entity);
+
 
             return new Usuario(
                     salvo.getId(),
                     salvo.getNome(),
                     salvo.getCpf(),
                     salvo.getEmail(),
-                    salvo.getSenha()
+                    salvo.getSenha(),
+                    salvo.getRole()
             );
         } catch (Exception e) {
             throw new RegraNegocioException("Erro ao atualizar usuario");

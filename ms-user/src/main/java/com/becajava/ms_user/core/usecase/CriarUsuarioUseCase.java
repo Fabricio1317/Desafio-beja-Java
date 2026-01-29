@@ -1,5 +1,6 @@
 package com.becajava.ms_user.core.usecase;
 
+import com.becajava.ms_user.core.domain.UserRole;
 import com.becajava.ms_user.core.domain.Usuario;
 import com.becajava.ms_user.core.exception.RegraNegocioException;
 import com.becajava.ms_user.core.gateway.PasswordEncoderGateway;
@@ -26,7 +27,18 @@ public class CriarUsuarioUseCase {
         }
 
         String senhaHash = passwordEncoderGateway.encode(dto.senha());
-        Usuario novoUsuario = new Usuario(dto.nome(), dto.cpf(), dto.email(), senhaHash);
+
+
+        UserRole roleParaSalvar = (dto.role() != null) ? dto.role() : UserRole.USER;
+
+        Usuario novoUsuario = new Usuario(
+                dto.nome(),
+                dto.cpf(),
+                dto.email(),
+                senhaHash,
+                roleParaSalvar
+        );
+
         Usuario usuario = usuarioGateway.criarUsuario(novoUsuario);
 
         return new UsuarioResponseDTO(usuario);

@@ -37,13 +37,13 @@ public class AtualizarUsuarioUseCase {
         } else {
             senhaFinal = usuarioAntigo.getSenha();
         }
-
         Usuario usuarioAtualizado = new Usuario(
                 id,
                 dto.nome(),
                 dto.cpf(),
                 dto.email(),
-                senhaFinal
+                senhaFinal,
+                usuarioAntigo.getRole()
         );
 
         Usuario salvo = usuarioGateway.atualizar(usuarioAtualizado);

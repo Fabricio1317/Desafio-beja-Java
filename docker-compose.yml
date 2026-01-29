@@ -1,6 +1,6 @@
 services:
 
-  # Serviço de Coordenação do Kafka
+  # Servico de Coordenacao do Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
@@ -21,7 +21,6 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # AQUI ESTÁ O SEGREDO DO KAFDROP (kafka:29092) E DO JAVA (localhost:9092)
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
@@ -29,7 +28,6 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
-  # Interface visual para ver o Kafka (Acesse localhost:9000)
   kafdrop:
     image: obsidiandynamics/kafdrop
     container_name: kafdrop
@@ -38,23 +36,19 @@ services:
     ports:
       - "9000:9000"
     environment:
-      # Conecta na porta interna do Kafka
       KAFKA_BROKERCONNECT: kafka:29092
-      JVM_OPTS: "-Xms32M -Xmx64M" # Otimização de memória
+      JVM_OPTS: "-Xms32M -Xmx64M"
 
   # Banco de Dados PostgreSQL
   postgres:
     image: postgres:17
     container_name: postgres
     ports:
-      - "5433:5432" # Porta Externa 5433 -> Interna 5432
+      - "5433:5432"
     environment:
       POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: dev12345 # ATENÇÃO: Se seu Java usa dev1234, mude aqui ou no Java!
+      POSTGRES_PASSWORD: dev12345
       POSTGRES_DB: user_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      # Removi a linha do init.sql para evitar erro de arquivo não encontrado se você não tiver o script
-
+     
 volumes:
   postgres_data:

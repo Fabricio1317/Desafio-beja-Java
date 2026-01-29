@@ -1,6 +1,5 @@
 package com.becajava.ms_user.infra.config;
 
-import com.becajava.ms_user.infra.config.SecurityFilter; // Importe o seu filtro corretamente
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,26 +27,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-
                 .csrf(AbstractHttpConfigurer::disable)
-
-
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
 
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/users").permitAll() // Criar conta
-                        .requestMatchers(HttpMethod.GET, "/users/{id}").permitAll() // Consultar ID (Usado pelo MS-Transaction)
-
-
+                        .requestMatchers(HttpMethod.POST, "/users").permitAll() // Cadastro (SignUp)
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
+                        .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/users/importar").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/users/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/users/**").authenticated()
 
                         .anyRequest().authenticated()
                 )
-
 
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

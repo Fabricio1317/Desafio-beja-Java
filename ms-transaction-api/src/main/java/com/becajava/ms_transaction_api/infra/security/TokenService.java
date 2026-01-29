@@ -24,4 +24,19 @@ public class TokenService {
             return "";
         }
     }
+
+    // NOVO MÉTODO: Extrai a role do token sem precisar consultar o banco
+    public String getRoleFromToken(String token) {
+        try {
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+            return JWT.require(algorithm)
+                    .withIssuer("ms-user")
+                    .build()
+                    .verify(token)
+                    .getClaim("role") // Pega a claim "role" que enviamos do ms-user
+                    .asString();
+        } catch (JWTVerificationException exception) {
+            return "";
+        }
+    }
 }

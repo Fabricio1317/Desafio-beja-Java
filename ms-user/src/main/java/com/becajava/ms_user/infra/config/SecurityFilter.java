@@ -31,7 +31,6 @@ public class SecurityFilter extends OncePerRequestFilter {
         var token = recuperarToken(request);
 
         if (token != null) {
-
             var login = tokenService.validarToken(token);
 
             if (!login.isEmpty()) {
@@ -41,7 +40,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                     var authentication = new UsernamePasswordAuthenticationToken(
                             usuario,
                             null,
-                            Collections.emptyList()
+                            usuario.getAuthorities()
                     );
 
                     SecurityContextHolder.getContext().setAuthentication(authentication);

@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Tratamento para Erros de Negócio (400)
     @ExceptionHandler(RegraDeNegocioException.class)
     public ResponseEntity<MensagemErro> handleRegraNegocio(RegraDeNegocioException e, HttpServletRequest request) {
         MensagemErro erro = new MensagemErro(
@@ -25,7 +24,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
     }
 
-    // Tratamento para Validação de Campos (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<MensagemErro> handleValidation(MethodArgumentNotValidException e, HttpServletRequest request) {
         String mensagens = e.getBindingResult().getFieldErrors().stream()
@@ -41,7 +39,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(erro);
     }
 
-    // Tratamento Genérico (500) - Pega qualquer outro erro não tratado
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MensagemErro> handleGeneral(Exception e, HttpServletRequest request) {
         MensagemErro erro = new MensagemErro(
