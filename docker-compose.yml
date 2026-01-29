@@ -67,7 +67,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433/user_db
       SPRING_DATASOURCE_USERNAME: devuser
       SPRING_DATASOURCE_PASSWORD: dev12345
-      API_SECURITY_TOKEN_SECRET: 1@3$$5¨7ddaP
+      API_SECURITY_TOKEN_SECRET: MinhaSenha1234
 
   ms-transaction-api:
     build: ./ms-transaction-api
@@ -82,7 +82,8 @@ services:
       SPRING_DATASOURCE_USERNAME: devuser
       SPRING_DATASOURCE_PASSWORD: dev12345
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      API_SECURITY_TOKEN_SECRET: 1@3$$5¨7ddaP
+      API_SECURITY_TOKEN_SECRET: MinhaSenha1234
+    
 
   ms-transaction-worker:
     build: ./ms-transaction-worker
