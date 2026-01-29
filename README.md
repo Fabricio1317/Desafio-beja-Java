@@ -1,97 +1,88 @@
-# Sistema de Microsservicos para Gestao de Usuarios e Transacoes de Gestao Financeira
+# Sistema de Microsserviços para Gestão de Utilizadores e Transações Financeiras
 
-Este projeto implementa uma arquitetura de microsservicos voltada para o gerenciamento de usuarios e processamento de transacoes financeiras. A solucao utiliza seguranca baseada em perfis de acesso (RBAC) via tokens JWT e comunicacao assincrona via Kafka.
+Este projeto implementa uma arquitetura de microsserviços para o processamento de transações e gestão de perfis de acesso, utilizando Java 17, Spring Boot, Apache Kafka e Docker.
 
-# Arquitetura do Sistema
+# Arquitetura do Ecossistema
 
-O ecossistema e composto por tres servicos principais que se comunicam via rede interna do Docker:
+O sistema é dividido em três serviços principais que comunicam de forma síncrona (Feign Client) e assíncrona (Kafka):
 
-1. ms-user: Responsavel pelo cadastro de usuarios, autenticacao e gestao de perfis (ADMIN e USER). Localizado na porta 8081.
-2. ms-transaction-api: Gerencia o recebimento de transacoes financeiras e publica mensagens no Kafka. Localizado na porta 8082.
-3. ms-transaction-worker: Escuta o topico do Kafka (listener) para processar e persistir as transacoes de forma assincrona no banco de dados.
+1. ms-user: Gestão de credenciais, autenticação JWT e controlo de perfis (ADMIN/USER). Porta 8081.
+2. ms-transaction-api: Interface para recebimento de transações e publicação no tópico do Kafka. Porta 8082.
+3. ms-transaction-worker: Consumidor que processa as mensagens da fila e persiste os dados no Postgres.
 
-# Requisitos Tecnicos
+# Requisitos Técnicos
 
-Para a execucao do projeto, e necessario ter instalado:
-
+* Java 17 (JDK) e Maven 3.8+
 * Docker e Docker Compose
-* Java 17 e Maven 3.8 (para a etapa de build)
+* Ferramenta para testes de API (Insomnia ou Postman)
 
-# Estrutura de Diretorios
+# Estrutura de Diretórios e Ficheiros
 
-.
+Para o correto funcionamento dos scripts de automação, a estrutura deve ser:
+
+RAIZ DO PROJETO/
 ├── docker-compose.yml
-├── README.md
+├── executar_projeto.bat
 ├── ms-user/
+│   ├── Dockerfile
+│   └── pom.xml
 ├── ms-transaction-api/
+│   ├── Dockerfile
+│   └── pom.xml
 └── ms-transaction-worker/
+├── Dockerfile
+└── pom.xml
 
-# Instrucoes de Execucao
 
-Para rodar o ecossistema completo em containers, siga os passos abaixo:
 
-1. Build das Aplicacoes
-E necessario gerar os arquivos executaveis (.jar) de cada servico antes de iniciar os containers. Execute os comandos abaixo na raiz do projeto:
 
-cd ms-user && mvn clean package -DskipTests
-cd ../ms-transaction-api && mvn clean package -DskipTests
-cd ../ms-transaction-worker && mvn clean package -DskipTests
-cd ..
+# Instruções de Execução
 
-2. Inicializacao com Docker Compose
-Com o arquivo docker-compose.yml presente na raiz, execute o comando:
+1. Build e Inicialização Automática:
+Execute o ficheiro executar_projeto.bat na raiz do projeto. Este script automatiza o mvn clean package em todos os módulos e inicia o docker-compose up --build.
+2. Gestão Manual do Banco de Dados (Postgres):
+O Docker cria automaticamente apenas o user_db. É obrigatório criar o banco de dados das transações manualmente após a primeira subida dos containers. Utilize os comandos abaixo no terminal:
 
-docker-compose up --build
+Criar banco de dados:
+docker exec -it postgres createdb -U devuser transacao_db
 
-# Observacoes Tecnicas Importantes
+Consultar transações (Validação do Worker):
+docker exec -it postgres psql -U devuser -d transacao_db -c "SELECT * FROM transacoes;"
 
-1. Gestao de Bancos de Dados: O container Postgres cria automaticamente apenas o banco user_db. Apos subir os containers pela primeira vez, e obrigatorio acessar o banco (porta 5433) e executar o comando: CREATE DATABASE transacao_db; para que os servicos de transacao e o worker funcionem corretamente.
-2. Segredo JWT: A senha original utilizada e 1@3$5¨7ddaP. No arquivo docker-compose.yml, ela deve ser representada com cifrao duplo ($$) para evitar erros de interpretacao do Docker.
-3. Rede Interna: Os servicos estao configurados para se comunicarem pelos nomes dos containers (postgres:5432 e kafka:29092).
-4. Persistencia: Foi configurado um volume para o Postgres (postgres_data) para garantir que as informacoes nao sejam perdidas ao encerrar os containers.
+Consultar utilizadores:
+docker exec -it postgres psql -U devuser -d user_db -c "SELECT * FROM usuarios;"
 
-# Configuracao de Seguranca e Perfis
+# Segurança e Autenticação
 
-O sistema utiliza tokens JWT para autorizacao. Ao realizar o login, o token gerado carrega a permissao do usuario:
+* JWT Secret: Configurado no docker-compose com escape de cifrão ($$) para compatibilidade com o ambiente Docker.
+* RBAC (Controlo de Acesso):
+* ROLE_USER: Permissão para criar transações.
+* ROLE_ADMIN: Permissão para relatórios analíticos e gestão total.
 
-* ROLE_USER: Permissao para operacoes comuns, como criacao de transacoes.
-* ROLE_ADMIN: Permissao total, incluindo exclusao de usuarios, importacao de dados e acesso a relatorios analiticos.
 
-# Exemplos de Uso (JSON)
 
-Cadastro de novo usuario (POST http://localhost:8081/users)
+# Exemplos de Chamadas de API
 
+Registo de Utilizador (POST http://localhost:8081/users):
 {
-"nome": "User",
-"cpf": "24445648991",
-"email": "user@email.com",
-"senha": "12345",
+"nome": "Utilizador Teste",
+"cpf": "12345678901",
+"email": "teste@email.com",
+"senha": "123",
 "role": "USER"
 }
 
-Registro de nova transacao (POST http://localhost:8082/transacoes)
-
+Envio de Transação (POST http://localhost:8082/transacoes):
 {
-"usuarioId": 4,
-"valor": 200.00,
+"usuarioId": 1,
+"valor": 100.0,
 "tipo": "SAQUE",
-"categoria": "CAIXA_ELETRONICO",
-"descricao": "Saque para o fim de semana"
+"categoria": "ALIMENTACAO",
+"descricao": "Almoço executivo"
 }
 
-# Fluxo de Validacao no Insomnia
+# Comandos Úteis de Manutenção
 
-1. Criar Usuario: Envie o POST para /users definindo a role desejada.
-2. Autenticacao: Envie um POST para /auth/login para obter o Bearer Token.
-3. Testar Seguranca: No POST de transacao ou na busca de relatorios, adicione o token no cabecalho Authorization. Se tentar acessar um relatorio sendo ROLE_USER, o sistema retornara 403 (Forbidden).
-
-# Comandos de Gerenciamento
-
-Encerrar servicos:
-docker-compose down
-
-Visualizar logs em tempo real:
-docker-compose logs -f
-
-Reiniciar ambiente limpando dados do banco:
-docker-compose down -v && docker-compose up --build
+* Parar e limpar volumes: docker-compose down -v
+* Ver logs em tempo real: docker-compose logs -f
+* Rebuild manual: mvn clean package -DskipTests
