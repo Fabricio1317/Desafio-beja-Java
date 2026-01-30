@@ -2,7 +2,7 @@ package com.becajava.ms_transaction_api.core.usecase;
 
 import com.becajava.ms_transaction_api.core.domain.Transacao;
 import com.becajava.ms_transaction_api.core.domain.StatusTransacao;
-import com.becajava.ms_transaction_api.core.exception.RegraDeNegocioException; // <--- Import Novo
+import com.becajava.ms_transaction_api.core.exception.RegraDeNegocioException;
 import com.becajava.ms_transaction_api.core.gateway.MensageriaGateway;
 import com.becajava.ms_transaction_api.core.gateway.TransacaoGateway;
 import com.becajava.ms_transaction_api.core.dto.TransacaoRequestDTO;
