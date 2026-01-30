@@ -1,6 +1,6 @@
-services:
+version: '3.8'
 
-  # Servico de Coordenacao do Kafka
+services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
@@ -10,7 +10,6 @@ services:
     ports:
       - "2181:2181"
 
-  # O Cluster Kafka
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
@@ -21,12 +20,70 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: dev12345
+      POSTGRES_DB: user_db 
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ms-user:
+    build: ./ms-user
+    container_name: ms-user
+    ports:
+      - "8081:8081" 
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_db
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: dev12345
+     
+
+  ms-transaction-api:
+    build: ./ms-transaction-api
+    container_name: ms-transaction-api
+    ports:
+      - "8082:8082" 
+    depends_on:
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433/transacao_db
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: dev12345
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+
+  ms-transaction-worker:
+    build: ./ms-transaction-worker
+    container_name: ms-transaction-worker
+    depends_on:
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5433/transacao_db
+      SPRING_DATASOURCE_USERNAME: devuser
+      SPRING_DATASOURCE_PASSWORD: dev12345
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
   kafdrop:
     image: obsidiandynamics/kafdrop
@@ -37,17 +94,6 @@ services:
       - "9000:9000"
     environment:
       KAFKA_BROKERCONNECT: kafka:29092
-      JVM_OPTS: "-Xms32M -Xmx64M"
 
-  # Banco de Dados PostgreSQL
-  postgres:
-    image: postgres:17
-    container_name: postgres
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: dev12345
-      POSTGRES_DB: user_db
 volumes:
   postgres_data:
