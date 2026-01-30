@@ -86,3 +86,12 @@ Envio de Transação (POST http://localhost:8082/transacoes):
 * Parar e limpar volumes: docker-compose down -v
 * Ver logs em tempo real: docker-compose logs -f
 * Rebuild manual: mvn clean package -DskipTests
+
+
+
+
+# Portas OpenAPI
+
+http://localhost:8082/swagger-ui.html
+
+http://localhost:8081/swagger-ui/index.html
